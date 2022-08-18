@@ -1,0 +1,12 @@
+figcaption::before {
+	content: "图 " counter(h2) "." counter(figure);
+}
+.example::before {
+	content: "示例 " counter(h2) "." counter(example);
+}
+.issue::before {
+	content: "问题 " counter(issue);
+}
+.proposal::before {
+	content: "提案 " counter(proposal);
+}

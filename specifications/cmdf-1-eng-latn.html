@@ -1,0 +1,330 @@
+<!DOCTYPE HTML>
+<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+<script src="https://cdnjs.loli.net/ajax/libs/jquery/3.6.0/jquery.slim.min.js"></script>
+<link rel="stylesheet" href="docs.css" type="text/css" media="all" />
+<link rel="stylesheet" href="docs-eng-latn.css" type="text/css" media="all" />
+<script src="docs.js" type="text/javascript" charset="utf-8"></script>
+<title>Cryville Meta Database Framework Version 1</title>
+<h1>Cryville Meta <wbr />Database Framework <wbr />Version 1</h1>
+<h2>Copyright</h2>
+<dl>
+	<dt>Editors</dt>
+	<dd>Lime Chow</dd>
+</dl>
+<p>Copyright © Cryville 2021-2022. This specification is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>. Implementation is not limited.</p>
+<h2>Abstract</h2>
+<p>This document specifies Cryville Meta Database Framework (CMDF) Version 1. CMDF allows different types of data to be loaded, stored, and organized efficiently.</p>
+<p>This document is currently a working draft, thus the stability of the definitions described in this document is not guaranteed.</p>
+<p class="printonly">Draft archive timestamp: <time class="now"></time></p>
+<h2>Table of Contents</h2>
+<dl id="toc"></dl>
+<div id="body">
+<h2>Introduction</h2>
+<p>Overtime, databases have been using tables to store data. The structures of the records, or the columns of a table, are predefined, which leads to good performance, but sometimes bad flexibility. CMDF is a database framework designed to focus more on flexibility, meanwhile without losing too much performance.</p>
+<p>The main difference between CMDF and traditional database frameworks is the way how they store data. While traditional databases store data in tables, CMDF stores data in nodes and connect them with each other, forming a relational network. Compared to traditional database frameworks, CMDF should provide the following features:</p>
+<ul>
+	<li>Fast relational lookup;</li>
+	<li>Fast searching and sorting;</li>
+	<li>Dynamic modification on data structures;</li>
+	<li>Fast and flexible data exchange.</li>
+</ul>
+<h2>Main Database File Data Structure</h2>
+<p>The main database file contains all the records in the database. It is made up of a <a href="#dfn-header">header</a> and a data body. Although the database structure represents a network, it is still stored in a file or a number of files in linear form.</p>
+<h3>General Data Structures</h3>
+<p>There are a number of data structures commonly used across the database file.</p>
+<h4><dfn id="dfn-string">String</dfn></h4>
+<p>A string is a sequence of characters encoded in UTF-8. Strings are serialized in three different forms: padded, zero-terminated, and sized. Padded strings are padded to the specified length with null control characters <code>\0</code>. Zero-terminated strings are terminated with a null control character <code>\0</code>, preventing applications from skipping the string. Sized strings are serialized with its length in bytes before it, allowing applications to skip over this string.</p>
+<p>The length of a sized string is limited by the size of the length record.</p>
+<pre>
+string padded_str[7]       = "CMDF"; // Bytes:    43 4D 44 46 00 00 00
+string zero_terminated_str = "CMDF"; // Bytes:    43 4D 44 46 00
+string sized_str&lt;0..2^8-1&gt; = "CMDF"; // Bytes: 04 43 4D 44 46
+</pre>
+<h4><dfn id="dfn-pointer">Pointer</dfn></h4>
+<p>A pointer is an unsigned 64-bit integer pointing to an address in the file. A zero value indicates that the pointer is null.</p>
+<p>When the main database is stored in a number of files, the significant bits of a pointer MAY be used to point to different files.</p>
+<h4><dfn id="dfn-timestamp">Timestamp</dfn></h4>
+<p>A timestamp is the time elapsed since the Unix epoch (00:00:00 UTC on 1970-01-01) excluding leap seconds in milliseconds. It is serialized as a 64-bit unsigned integer.</p>
+<h4><dfn id="dfn-tree-pair">Tree pair</dfn></h4>
+<pre>
+struct {
+	pointer ptr_content_root;
+	pointer ptr_revision_root;
+} TreePair; /* 16 bytes */
+</pre>
+<p>The database file contains a number of AVL nodes making up AVL trees. AVL tree is a self-balancing binary search tree, enabling fast node searching, insertion, and deletion. Trees are paired as tree pairs, with one being the content tree and the other being the revision tree, both null pointers when initialized. The revision tree records the timestamps when the content nodes are inserted, moved, or deleted.</p>
+<h3><dfn id="dfn-header">Header</dfn></h3>
+<pre>
+struct {
+	<a href="#dfn-string">string</a>   magic[4] = "CMDF"; /*   4 bytes */
+	uint32   version  = 0;      /*   4 bytes */
+	<a href="#dfn-tree-pair">TreePair</a> tp_obj;            /*  16 bytes */
+	<a href="#dfn-pointer">pointer</a>  ptr_fc;            /*   8 bytes */
+	byte     reserved[214];     /* 214 bytes */
+	<a href="#dfn-pointer">pointer</a>  ptr_ext_header;    /*   8 bytes */
+	byte     reserved;          /*   1 byte  */
+	byte     flag     = 0xFF;   /*   1 byte  */
+} HeaderBase; /* 256 bytes */
+</pre>
+<dl>
+	<dt><var>magic</var></dt>
+	<dd>A 4-byte magic word used to identify the file format.</dd>
+	<dt><var>version</var></dt>
+	<dd>CMDF version, currently 0 (Version 1).</dd>
+	<dt><var>tp_obj</var></dt>
+	<dd>The object tree pair.</dd>
+	<dt><var>ptr_fc</var></dt>
+	<dd>The free chunk tree.</dd>
+	<dt><var>reserved</var></dt>
+	<dd>A chunk reserved for possible use in the future. It pads the whole header up to 256 bytes.</dd>
+	<dt><var>ptr_ext_header</var></dt>
+	<dd>A pointer reserved for possible use in the future, in case the reserved chunk is not sufficient for the header. SHOULD be null in the current version.</dd>
+	<dt><var>flag</var></dt>
+	<dd>A flag to distinguish the header from the nodes.</dd>
+</dl>
+<h3>Body and Data</h3>
+<pre>
+enum {
+	is_free_chunk (0x01),
+	(0xFF)
+} NodeFlag;
+
+<dfn id="dfn-node">struct {
+	<a href="#dfn-pointer">pointer</a>   ptr_l;
+	<a href="#dfn-pointer">pointer</a>   ptr_r;
+	uint64    lh_weight;
+	byte      height;
+	NodeFlag  flag;
+	<a href="#dfn-timestamp">timestamp</a> rev;
+	opaque    data;
+	byte      padding_size;
+	byte      padding[padding_size];
+	NodeFlag  flag;
+} Node; /* 36 bytes + sizeof(data) + padding_size */</dfn>
+</pre>
+<dl>
+	<dt><var>ptr_l</var>, <var>ptr_r</var></dt>
+	<dd>The left/right child node.</dd>
+	<dt><var>lh_weight</var></dt>
+	<dd>The count of all descending nodes on the left. This is used to calculate the index of a node and the total node count in a tree.</dd>
+	<dt><var>height</var></dt>
+	<dd>The height of the sub-tree, excluding the node itself.</dd>
+	<dt><var>rev</var></dt>
+	<dd>Last revision timestamp of the node, when <var>data</var> is modified. It is also used to locate the <var>RevisionData</var> when the node is deleted. Nodes with <var>FreeChunkData</var> SHOULD have this field set to 0.</dd>
+	<dt><var>data</var></dt>
+	<dd>The data stored in this node.</dd>
+	<dt><var>padding</var></dt>
+	<dd>A field that pads the size of the <var>ObjectData</var> to the preferred size or to the whole span of the free chunk.</dd>
+</dl>
+<p>The preferred size of a node is the smallest multiple of 16 not less than the size of <var>data</var> plus 36 (in bytes.)</p>
+<p>When writing a <var>Node</var>, it is RECOMMENDED to skip over the <var>padding</var> field without writing any data.</p>
+<h4>Revision data</h4>
+<pre>
+struct {
+	<a href="#dfn-pointer">pointer</a> ptr;
+} RevisionData; /* 8 bytes */
+</pre>
+<dl>
+	<dt><var>ptr</var></dt>
+	<dd>(AVL key) The target.</dd>
+</dl>
+<h4>Object data</h4>
+<pre>
+struct {
+	byte     id[16];
+	<a href="#dfn-tree-pair">TreePair</a> tp_comps;
+	<a href="#dfn-tree-pair">TreePair</a> tp_ents;
+	<a href="#dfn-tree-pair">TreePair</a> tp_props;
+	<a href="#dfn-tree-pair">TreePair</a> tp_vals;
+	<a href="#dfn-meta-name">MetaName</a> name;
+} ObjectData; /* 80 bytes + sizeof(name) */
+</pre>
+<dl>
+	<dt><var>id</var></dt>
+	<dd>(AVL key) The ID of the object. The first 8 bytes (64 bits) represent an object identifier. The other 8 bytes represent an object discriminator.</dd>
+	<dd>Uncomparable objects are defined with the root object identifier as the object identifier and their representing object identifier as the object discriminator. The root object is defined with the root object identifier as both the root object identifier and the object discriminator.</dd>
+	<dd>The root object identifier is <code>00 00 00 00 00 00 00 00</code>. Object identifiers for other uncomparable objects are the value of a counter which is initially <code>0</code> and increases every time before a new uncomparable object is added.</dd>
+	<dt><var>tp_comps</var></dt>
+	<dd>The components in <var>LinkData</var> of the object. The object inherits all properties from its components, and MUST be listed as an entity of all its components.</dd>
+	<dt><var>tp_ents</var></dt>
+	<dd>The entities in <var>LinkData</var> of the object. The entities of an object inherits all properties from the object. The object MUST be listed as a component of all its entities.</dd>
+	<dt><var>tp_props</var></dt>
+	<dd>The property definitions in <var>LinkData</var> of the object. The object that a property points to MUST have a property points back. For example, if object A has object B as one of its properties, then object B must have object A as one of its properties as well.</dd>
+	<dt><var>tp_vals</var></dt>
+	<dd>The property key value pairs in <var>PropertyData</var> of the object. The object MUST have all of its property keys defined in <var>tp_props</var> of its components. The object that a property value points to MUST have a property value points back. For example, if object A with component B has a property key C set to value D, object D must have a component C and a property key B set to value A.</dd>
+	<dt><var>name</var></dt>
+	<dd>The meta name of the object.</dd>
+</dl>
+<p><dfn id="dfn-meta-name">Meta name</dfn> is a list of name parts describing the name of the object. A name part contains a name string, with the information of its language.</p>
+<p>Meta name is designed to eliminate the problem of multiple languages in a single name. Meanwhile it gives the database potential to store or automatically generate different aliases and transcriptions of an object, thus later the object can be looked up faster and more conveniently.</p>
+<pre>
+struct {
+	MetaNamePart name_part[1..2^8-1];
+} MetaName;
+
+struct {
+	<a href="#dfn-string">string</a> language;
+	<a href="#dfn-string">string</a> name;
+} MetaNamePart;
+</pre>
+<dl>
+	<dt><var>language</var></dt>
+	<dd>The language of the name part.</dd>
+	<dd>This field consists of at least two subtags in lowercase letters, separated by hyphens <code>-</code>. The first subtag is an ISO 639-3 code indicating language. The second one is an ISO 15924 code indicating script. The third and the fourth one, both optional, are an ISO 3166-1 alpha-2 code and an ISO 3166-2 code respectively indicating region.</dd>
+	<dd>For those pairs of equivalent codes in ISO 3166-1 alpha-2 and ISO 3166-2, the one in ISO 3166-1 alpha-2 is used. See Appendix A for these pairs of equivalents.</dd>
+	<dt><var>name</var></dt>
+	<dd>The name.</dd>
+</dl>
+<div class="example">
+<div class="note"><p>All non-ASCII characters in the code below are escaped in case of inconsistent rendering.</p></div>
+<pre>
+meta_name: [
+	("jpn-jpan","\x8679\x8272")
+	("eng-latn","Passions")
+	("jpn-jpan","\xFF01")
+]
+meta_name: [("eng-latn-gb","colour")]
+meta_name: [("eng-latn-us","color")]
+meta_name: [("jpn-jpan","\x7A7A")]
+meta_name: [("zho-hans","\x7A7A")]
+meta_name: [("zho-hant","\x7A7A")]
+</pre>
+<p>The example above may be rendered in HTML like this:</p>
+<ul>
+	<style>
+		[gcm=L]+[gcm=L]::before{content:"\2008";}
+		:lang(jpn-jpan){font-family:"Noto Serif CJK JP","Meiryo",serif;}
+		:lang(zho-hans){font-family:"Noto Serif CJK SC","Microsoft YaHei",serif;}
+		:lang(zho-hant){font-family:"Noto Serif CJK TC","Microsoft JhengHei",serif;}
+	</style>
+	<li><span lang="jpn-jpan" gcm="L">虹色</span><span lang="eng-latn" gcm="L">Passions</span><span lang="jpn-jpan" gcm="P">！</span></li>
+	<li><span lang="eng-latn-gb">colour</span></li>
+	<li><span lang="eng-latn-us">color</span></li>
+	<li><span lang="jpn-jpan">空</span></li>
+	<li><span lang="zho-hans">空</span></li>
+	<li><span lang="zho-hant">空</span></li>
+</ul>
+</div>
+<!--<h4>Revision data</h4>
+<div class="issue">This node data is obsolete by the direct use of <var>LinkData</var>.</div>
+<p>Revision data store the latest revision time of a node to determine whether to transmit the data when requested, reducing the amount of data to be exchanged across peers.</p>
+<pre>
+struct {
+	timestamp time;
+	pointer   ptr;
+} RevisionData; /* 16 bytes */
+</pre>
+<dl>
+	<dt><var>time</var></dt>
+	<dd>(AVL key) The last revision timestamp.</dd>
+	<dt><var>ptr</var></dt>
+	<dd>The node.</dd>
+</dl>-->
+<h4>Property Data</h4>
+<p>Property data store the property of the object in key value pairs.</p>
+<pre>
+struct {
+	<a href="#dfn-pointer">pointer</a> ptr_key;
+	<a href="#dfn-pointer">pointer</a> ptr_value;
+} PropertyData; /* 16 bytes */
+</pre>
+<dl>
+	<dt><var>ptr_key</var></dt>
+	<dd>(AVL main key) The key object.</dd>
+	<dt><var>ptr_value</var></dt>
+	<dd>(AVL sub key) The value object.</dd>
+</dl>
+<h4>Link data</h4>
+<pre>
+struct {
+	<a href="#dfn-pointer">pointer</a> ptr;
+} LinkData; /* 8 bytes */
+</pre>
+<dl>
+	<dt><var>ptr</var></dt>
+	<dd>(AVL key) The target.</dd>
+</dl>
+<h4>Free chunk data</h4>
+<pre>
+struct {
+	uint32 size;
+	byte   discard[size];
+	uint32 size;
+} FreeChunkData; /* 8 bytes + sizeof(discard) */
+</pre>
+<dl>
+	<dt><var>size</var></dt>
+	<dd>(AVL main key) The size of the free chunk.</dd>
+</dl>
+<p>The AVL sub key is the start position of this node. The <var>flag</var> of the node is marked <var>is_free_chunk</var>.</p>
+<p>There MUST be at least one node in the free chunk tree, which is the never used chunk located after all the existing nodes. Its size MUST be the maximum value of <var>uint32</var>. This node MUST only have the first <var>size</var> field with the other two fields absent.</p>
+<p>The size of a node with <var>FreeChunkData</var> MUST span over the whole free chunk. It is only padded with the <var>discard</var> field and the size of the <var>padding</var> field MUST be 0.</p>
+<p>When writing <var>FreeChunkData</var>, it is RECOMMENDED to skip over the <var>discard</var> field without writing any data.</p>
+<h2>Operations</h2>
+<p>In CMDF, an operation refers to an action or a series of actions that write the database file. An operation functions as a whole. If an operation can be broken down into sub-actions, the sub-actions do not function individually and MUST function with the operation.</p>
+<p>A recovery file is used to protect write operations. A flag in the recovery file indicates if the database is writing data to the database file. While preforming write operations, the original bytes that would be overwritten later as well as their spans are first copied to the recovery file. The flag is then set to true. Next, the database starts to copy new data to the database file. After it is finished, the flag is reset to false.</p>
+<p>Upon startup, the database checks if the flag in the recovery file is true, which indicates an interruption during a write operation. The database can then recover the original data from the recovery file. After recovery is done, the flag is reset to false.</p>
+<p>All the data MUST be flushed or have been flushed into the file immediately after the flag is toggled.</p>
+<h3>Create database</h3>
+<p>The free chunk tree is created with the only essential node upon the creation of a database. The object tree pair stays null.</p>
+<h3>Subaction: Insert new node into a tree</h3>
+<div class="note"><p>Nodes with <var>FreeChunkData</var> cannot be inserted manually with this subaction.</p></div>
+<p>When inserting a new node into a tree, the preferred size of the node is computed and the smallest free chunk whose size is not less than the preferred size is found. Then the node is inserted in this chunk and the free chunk is removed from the free chunk tree. If the difference between the preferred size and the size of the free chunk is not less than 44 bytes, the leftover free chunk is reinserted into the free chunk tree. If the difference is less than 44 bytes, the <var>discard</var> field of the node is used to pad the node over the whole free chunk.</p>
+<p>If the free chunk found is the last free chunk, and the database file has no more sufficient space for the preferred size, the file is resized or a new database file is created to extend the storage.</p>
+<h3>Insert new node into a tree pair</h3>
+<div class="note"><p>Nodes with <var>RevisionData</var> cannot be inserted manually with this operation.</p></div>
+<p>When inserting a new node into a tree pair, a <var>Node</var> with specific data is created and inserted into the content tree of the tree pair. Meanwhile a <var>Node</var> with <var>RevisionData</var> is created with the current timestamp and inserted into the revision tree of the tree pair. If the tree pair is in the data of another node, the <var>rev</var> field of that node is set to the same timestamp as well.</p>
+<p>If a node with the same AVL key has already existed, the operation fails.</p>
+<h4>Insert object</h4>
+<p>The <var>id</var> and the <var>name</var> is determined when the object is inserted and MUST NOT be modified. The four <var>TreePair</var>s are null pointers.</p>
+<h3>Delete node</h3>
+<div class="note"><p>Nodes with <var>RevisionData</var> or <var>FreeChunkData</var> cannot be deleted manually with this operation.</p></div>
+<p>When deleting a node, the node is not actually removed from the database file, but its <var>flag</var> is set to <var>deleted</var>.</p>
+<div class="issue"><del>Do we actually remove the node instead of marking it as deleted?</del> <ins>We should remove the node instead.</ins></div>
+<div class="issue">What other fields should be affected by this operation?</div>
+<h2>Queries</h2>
+<div id="foot">
+<h2>References</h2>
+<ol id="cite"></ol>
+<h2>Appendix A: ISO 3166 equivalent codes</h2>
+<div class="note"><p>The usage of ISO 3166-1 alpha-2 codes does not imply sovereignty recognition by any contributors of this specification. It is specified in order to include more details of the region.</p></div>
+<table>
+<thead><tr>
+	<th>ISO 3166-2</th>
+	<th>ISO 3166-1 alpha-2</th>
+</tr></thead>
+<tbody>
+	<tr><td>CN-HK</td><td>HK</td></tr>
+	<tr><td>CN-MO</td><td>MO</td></tr>
+	<tr><td>CN-TW</td><td>TW</td></tr>
+	<tr><td>FI-01</td><td>AX</td></tr>
+	<tr><td>FR-BL</td><td>BL</td></tr>
+	<tr><td>FR-GF</td><td>GF</td></tr>
+	<tr><td>FR-GP</td><td>GP</td></tr>
+	<tr><td>FR-MF</td><td>MF</td></tr>
+	<tr><td>FR-MQ</td><td>MQ</td></tr>
+	<tr><td>FR-NC</td><td>NC</td></tr>
+	<tr><td>FR-PF</td><td>PF</td></tr>
+	<tr><td>FR-PM</td><td>PM</td></tr>
+	<tr><td>FR-RE</td><td>RE</td></tr>
+	<tr><td>FR-TF</td><td>TF</td></tr>
+	<tr><td>FR-WF</td><td>WF</td></tr>
+	<tr><td>FR-YT</td><td>YT</td></tr>
+	<tr><td>NL-AW</td><td>AW</td></tr>
+	<tr><td>NL-BQ1</td><td rowspan="3">BQ</td></tr>
+	<tr><td>NL-BQ2</td></tr>
+	<tr><td>NL-BQ3</td></tr>
+	<tr><td>NL-CW</td><td>CW</td></tr>
+	<tr><td>NL-SX</td><td>SX</td></tr>
+	<tr><td>US-AS</td><td>AS</td></tr>
+	<tr><td>US-GU</td><td>GU</td></tr>
+	<tr><td>US-MP</td><td>MP</td></tr>
+	<tr><td>US-PR</td><td>PR</td></tr>
+	<tr><td>US-UM</td><td>UM</td></tr>
+	<tr><td>US-VI</td><td>VI</td></tr>
+</tbody>
+</table>
+<h2>Acknowledgements</h2>
+<div class="issue">Acknowledgements are not written.</div>
+</div>
+</div>

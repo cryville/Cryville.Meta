@@ -1,0 +1,12 @@
+figcaption::before {
+	content: "Figure " counter(h2) "." counter(figure);
+}
+.example::before {
+	content: "Example " counter(h2) "." counter(example);
+}
+.issue::before {
+	content: "Issue " counter(issue);
+}
+.proposal::before {
+	content: "Proposal " counter(proposal);
+}

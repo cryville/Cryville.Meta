@@ -1,0 +1,391 @@
+body {
+	text-size-adjust: none;
+}
+#body {
+	counter-reset: issue cite page 1;
+	break-before: recto;
+	page: body;
+}
+h1, h2, h3, h4, h5, h6 {
+	bookmark-label: content(text);
+}
+h1 {
+	white-space: nowrap;
+	bookmark-level: 1;
+}
+h2, h3, h4, h5, h6 {
+	break-after: avoid;
+	clear: both;
+}
+h3, h4, h5, h6 {
+	margin: 1.5em 0 1em 0;
+}
+h2 {
+	break-before: page;
+	bookmark-level: 2;
+	string-set: h2 content();
+}
+#body > h2 {
+	counter-increment: h2;
+	counter-reset: h3 h4 example figure;
+}
+h3 {
+	bookmark-level: 3;
+}
+#body > h3 {
+	counter-increment: h3;
+	counter-reset: h4;
+}
+h4 {
+	bookmark-level: 4;
+}
+#body > h4 {
+	counter-increment: h4;
+}
+#body > h2::before {
+	content: counter(h2) ".";
+	margin-right: .25em;
+}
+#body > h3::before {
+	content: counter(h2) "." counter(h3) ".";
+	margin-right: .25em;
+}
+#body > h4::before {
+	content: counter(h2) "." counter(h3) "." counter(h4) ".";
+	margin-right: .25em;
+}
+hr {
+	break-after: page;
+}
+
+p, dd, li, .note, .example, .issue {
+	text-align: justify;
+	orphans: 2;
+	widows: 2;
+}
+p {
+	margin: 1em 0;
+}
+dt {
+	break-after: avoid;
+	font-weight: bold;
+}
+dd {
+	margin: 0 0 .5em 2em;
+}
+dfn {
+	font-style: normal;
+}
+code, kbd, pre, var {
+	font-family: "Consolas", monospace;
+	font-style: normal;
+}
+code, kbd {
+	margin: 0 .125em;
+	border: solid 1px gray;
+	padding: 0 .0625em;
+}
+kbd {
+	border-radius: 4px;
+}
+pre {
+	tab-size: 4;
+	background-color: #eee;
+	border: solid 1px gray;
+	box-decoration-break: slice;
+	padding: .5em;
+	white-space: pre-wrap;
+}
+img {
+	background-color: white;
+}
+figure {
+	break-inside: avoid;
+	counter-increment: figure;
+	border: solid 1px gray;
+	padding: 4px;
+}
+figure figure {
+	counter-increment: none;
+	float: left;
+	margin: 0;
+	border: none;
+}
+figure img {
+	max-width: 100%;
+}
+figcaption {
+	text-align: center;
+	clear: both;
+}
+figcaption::before {
+	font-weight: bold;
+	margin-right: .5em;
+}
+figure figure figcaption::before {
+	content: none;
+	margin-right: 0;
+}
+table {
+	border-collapse: collapse;
+}
+caption {
+	font-weight: bold;
+	white-space: nowrap;
+	padding: 0 .2;
+}
+td, th {
+	border: solid 1px black;
+	padding: 4px;
+}
+header, footer {
+	display: none;
+}
+
+#toc, #toc dl {
+	margin: 0;
+}
+#toc dd {
+	margin-bottom: 0;
+}
+#toc a::after {
+	content: leader(dotted) target-counter(attr(href), page);
+}
+
+cite {
+	font-style: normal;
+}
+#cite {
+	counter-reset: l-cite;
+}
+#cite > li {
+	counter-increment: l-cite;
+}
+#cite > li::marker {
+	content: "[" counter(l-cite) "] ";
+}
+#cite > li > a {
+	display: block;
+}
+#cite > li > a:first-child::after {
+	content: leader(" ") "P" target-counter(attr(href), page);
+}
+
+@font-face {
+	font-family: RemoteBravura;
+	src: url("https://raw.githubusercontent.com/steinbergmedia/bravura/master/redist/otf/Bravura.otf") format("opentype"), url("https://raw.githubusercontent.com/steinbergmedia/bravura/master/redist/woff/Bravura.woff2") format("woff2"), url("https://raw.githubusercontent.com/steinbergmedia/bravura/master/redist/woff/Bravura.woff") format("woff");
+}
+.music {
+	font-size: x-large;
+	line-height: 1em;
+	font-family: "Bravura", "Edwin", "Emmentaler", "Gonville", "Leland", "MuseJazz", "Petaluma", RemoteBravura;
+}
+.lh1 > * { line-height: 1.6em; }
+.lh2 > * { line-height: 2.2em; }
+.lh3 > * { line-height: 2.8em; }
+.lh4 > * { line-height: 3.4em; }
+.lh5 > * { line-height: 4.0em; }
+
+.dfn {
+	float: right;
+	margin: 0 8px;
+}
+.dfn th, .dfn td {
+	background-color: #def;
+	border-color: gray;
+	border-width: 1px 0;
+	padding: 4px 1em;
+}
+.dfn th {
+	text-align: right;
+	padding-right: .5em;
+}
+.dfn td {
+	text-align: left;
+	padding-left: .5em;
+}
+.note, .closed, .example, .issue, .proposal, figure {
+	overflow: hidden;
+	margin: .5em 0;
+	box-decoration-break: slice;
+}
+.note {
+	--note-light: lightgreen;
+	--note-dark : darkgreen;
+	background-color: var(--note-light);
+	border-left: solid .5em var(--note-dark);
+	padding: 0 .8em;
+}
+.note > p:only-child {
+	margin: .5em 0;
+}
+.closed {
+	--closed-light: silver;
+	--closed-dark : dimgray;
+	background-color: var(--closed-light);
+	border-left: solid .5em var(--closed-dark);
+	border-right: solid .5em var(--closed-dark);
+	padding: 0 .8em;
+}
+.closed > p:only-child {
+	margin: .5em 0;
+}
+.example {
+	counter-increment: example;
+	background-color: lightyellow;
+	border: solid 2px gray;
+	padding: .8em;
+}
+.example::before {
+	font-weight: bold;
+}
+.issue {
+	--issue-light: lightpink;
+	--issue-dark : darkred;
+	counter-increment: issue;
+	counter-reset: proposal;
+	background-color: var(--issue-light);
+	border-left: solid .5em var(--issue-dark);
+	padding: .5em;
+}
+.issue::before {
+	font-weight: bold;
+	color: var(--issue-dark);
+	margin-right: .5em;
+}
+.proposal {
+	--proposal-light: plum;
+	--proposal-dark : purple;
+	counter-increment: proposal;
+	background-color: var(--proposal-light);
+	border-left: solid .5em var(--proposal-dark);
+	padding: .5em;
+}
+.proposal::before {
+	font-weight: bold;
+	color: var(--proposal-dark);
+	margin-right: .5em;
+}
+.footnote {
+	float: footnote;
+}
+.printonly {
+	display: none;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+	body {
+		background-color: black;
+		color: white;
+	}
+	td, th {
+		border-color: white;
+	}
+	a {
+		color: lightblue;
+	}
+	a:visited {
+		color: violet;
+	}
+	a:active {
+		color: orange;
+	}
+	pre {
+		background-color: #111;
+	}
+	.dfn th, .dfn td {
+		background-color: #123;
+		border-color: lightgray;
+	}
+	.note {
+		background-color: var(--note-dark);
+		border-left-color: var(--note-light);
+	}
+	.closed {
+		background-color: var(--closed-dark);
+		border-color: var(--closed-light);
+	}
+	.example {
+		background-color: #220;
+	}
+	.issue {
+		background-color: var(--issue-dark);
+		border-left-color: var(--issue-light);
+	}
+	.issue::before {
+		color: var(--issue-light);
+	}
+	.proposal {
+		background-color: var(--proposal-dark);
+		border-left-color: var(--proposal-light);
+	}
+	.proposal::before {
+		color: var(--proposal-light);
+	}
+}
+
+@media print {
+	body {
+		margin: 0;
+	}
+	h1 {
+		text-align:	center;
+		padding: 0;
+		margin: 0;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		margin-right: -50%;
+		transform: translate(-50%, -50%);
+	}
+	a {
+		color: initial;
+		text-decoration: initial;
+	}
+	pre {
+		background-color: initial;
+	}
+	.printonly {
+		display: initial;
+	}
+	.noprint {
+		display: none;
+	}
+	.dfn th, .dfn td {
+		background-color: initial;
+	}
+	.example {
+		background-color: initial;
+	}
+	.issue, .note, .closed, .proposal {
+		background-color: initial;
+		border: solid 1px gray;
+		border-left-width: .5em;
+	}
+	.closed {
+		border-right-width: .5em;
+	}
+	.issue::before, .proposal::before {
+		color: initial;
+	}
+}
+
+@page {
+	size: A4;
+	margin: 15mm;
+}
+@page body {
+	@top-center {
+		content: string(h2);
+	}
+}
+@page body:verso {
+	@top-left {
+		content: counter(page);
+	}
+}
+@page body:recto {
+	@top-right {
+		content: counter(page);
+	}
+}
