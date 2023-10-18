@@ -106,6 +106,13 @@ namespace Cryville.Meta {
 			_copula = _reader.ReadModel<MetonModel>();
 			if (_sHeader.Magic != CmdbMagicNumber || _sHeader.Version != 0) throw new InvalidDataException("Invalid database.");
 			_pageSize = 1 << _sHeader.PageSize;
+
+			_stream.Seek(_pageSize, SeekOrigin.Begin);
+			for (int i = 8; i <= _pageSize; i += 8) {
+				var ptr = (long)_reader.ReadUInt64();
+				if (ptr == 0) continue;
+				_rfbcs.Add(new RootFreeBlockCell { Size = i, Pointer = ptr });
+			}
 		}
 	}
 }

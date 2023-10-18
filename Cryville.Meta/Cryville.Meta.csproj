@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CmdbConnection.cs" />
-    <Compile Include="Model\Meton.cs" />
+    <Compile Include="CmdbConnection.Pager.cs" />
     <Compile Include="CmdbConnection.Query.cs" />
     <Compile Include="CmdbReader.cs" />
     <Compile Include="CmdbWriter.cs" />
