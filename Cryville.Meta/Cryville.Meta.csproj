@@ -45,6 +45,14 @@
   <ItemGroup>
     <Compile Include="Model\DbFileHeader.cs" />
     <Compile Include="Model\Meton.cs" />
+    <Compile Include="Meton.cs" />
+    <Compile Include="Model\CmdbDynamicHeader.cs" />
+    <Compile Include="Model\CmdbStaticHeader.cs" />
+    <Compile Include="Model\IModel.cs" />
+    <Compile Include="Model\MetonModel.cs" />
+    <Compile Include="Model\MetonIdentifier.cs" />
+    <Compile Include="Model\MetonPair.cs" />
+    <Compile Include="Model\ModelExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
