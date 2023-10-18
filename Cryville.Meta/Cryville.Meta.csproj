@@ -46,8 +46,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Model\DbFileHeader.cs" />
+    <Compile Include="CmdbConnection.cs" />
     <Compile Include="Model\Meton.cs" />
+    <Compile Include="CmdbConnection.Query.cs" />
+    <Compile Include="CmdbReader.cs" />
+    <Compile Include="CmdbWriter.cs" />
     <Compile Include="Meton.cs" />
     <Compile Include="Model\CmdbDynamicHeader.cs" />
     <Compile Include="Model\CmdbStaticHeader.cs" />
@@ -57,6 +60,7 @@
     <Compile Include="Model\MetonPair.cs" />
     <Compile Include="Model\ModelExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Shared.cs" />
     <Compile Include="Util\BitOperations.cs" />
     <Compile Include="Util\FileSystemUtil.cs" />
     <Compile Include="Util\Platform\NativeWrapper.cs" />
