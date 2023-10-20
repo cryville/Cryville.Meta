@@ -5,11 +5,17 @@ using System.IO;
 
 namespace Cryville.Meta {
 	public partial class CmdbConnection {
-		readonly List<RootFreeBlockCell> _rfbcs = new List<RootFreeBlockCell>();
+		readonly List<RootFreeBlockCell> _rfbcs = new();
 		struct RootFreeBlockCell : IComparable<RootFreeBlockCell> {
 			public int Size;
 			public long Pointer;
 			public bool NewFlag;
+			public RootFreeBlockCell(int size, long pointer = 0, bool newFlag = false) {
+				Debug.Assert(size > 0 && (size & 0x07) == 0);
+				Size = size;
+				Pointer = pointer;
+				NewFlag = newFlag;
+			}
 			public int CompareTo(RootFreeBlockCell other) => Size.CompareTo(other.Size);
 		}
 		static int GetAlignedSize(int size) {
@@ -19,18 +25,18 @@ namespace Cryville.Meta {
 		}
 		void FindFreeBlock(int size, out RootFreeBlockCell targetLargeBlock, out RootFreeBlockCell nextSmallBlock) {
 			int alignedSize = GetAlignedSize(size);
-			var index = _rfbcs.BinarySearch(new RootFreeBlockCell { Size = alignedSize });
+			var index = _rfbcs.BinarySearch(new(alignedSize));
 			if (index < 0) {
 				index = ~index;
 				if (index >= _rfbcs.Count) {
 					var len = _stream.Length;
 					_stream.SetLength(len + _pageSize);
-					targetLargeBlock = new RootFreeBlockCell { Size = _pageSize, Pointer = len, NewFlag = true };
+					targetLargeBlock = new(_pageSize, len, true);
 				}
 				else {
 					targetLargeBlock = _rfbcs[index];
 				}
-				var index2 = _rfbcs.BinarySearch(new RootFreeBlockCell { Size = targetLargeBlock.Size - alignedSize });
+				var index2 = _rfbcs.BinarySearch(new(targetLargeBlock.Size - alignedSize));
 				nextSmallBlock = index2 < 0 ? default : _rfbcs[index2];
 			}
 			else {
@@ -77,18 +83,18 @@ namespace Cryville.Meta {
 				var alignedSize = GetAlignedSize(_size);
 				if (alignedSize < _lfb.Size) {
 					// A new small block is produced
-					var newSmallBlock = new RootFreeBlockCell { Pointer = _lfb.Pointer + alignedSize, Size = _lfb.Size - alignedSize };
+					var newSmallBlock = new RootFreeBlockCell(_lfb.Size - alignedSize, _lfb.Pointer + alignedSize);
 					_self._writer.Write((ulong)_sfb.Pointer);
 					_self.PushFreeBlock(newSmallBlock);
 				}
-				_self.PushFreeBlock(new RootFreeBlockCell { Size = _lfb.Size, Pointer = (long)_ptrNextLargeBlock });
+				_self.PushFreeBlock(new(_lfb.Size, (long)_ptrNextLargeBlock));
 			}
 		}
-		BlockScope AcquireFreeBlock(int size) => new BlockScope(this, size);
+		BlockScope AcquireFreeBlock(int size) => new(this, size);
 		void ReleaseBlock(ulong ptr, int size) {
 			Debug.Assert(ptr > 0 && size > 0);
 			int alignedSize = GetAlignedSize(size);
-			var fb = new RootFreeBlockCell { Size = alignedSize, Pointer = (long)ptr };
+			var fb = new RootFreeBlockCell(alignedSize, (long)ptr);
 			var index = _rfbcs.BinarySearch(fb);
 			var nextFreeBlockPtr = index < 0 ? 0 : _rfbcs[index].Pointer;
 			_stream.Seek((long)ptr, SeekOrigin.Begin);

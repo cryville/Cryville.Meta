@@ -10,7 +10,7 @@ namespace Cryville.Meta.Model {
 			FileChangeCounter = reader.ReadUInt32();
 			PageCount = reader.ReadUInt32();
 		}
-		public void WriteTo(BinaryWriter writer) {
+		public readonly void WriteTo(BinaryWriter writer) {
 			writer.Write(FileChangeCounter);
 			writer.Write(PageCount);
 		}

@@ -9,9 +9,9 @@ namespace Cryville.Meta.Model {
 		public ulong SubKey3 { get; set; }
 		public ulong SubKey4 { get; set; }
 
-		internal bool IsBackward => TypeKey < 0;
+		internal readonly bool IsBackward => TypeKey < 0;
 
-		public int CompareTo(MetonIdentifier other) {
+		public readonly int CompareTo(MetonIdentifier other) {
 			int r = TypeKey.CompareTo(other.TypeKey);
 			if (r != 0) return r;
 			r = SubKey1.CompareTo(other.SubKey1);
@@ -30,7 +30,7 @@ namespace Cryville.Meta.Model {
 			SubKey3 = reader.ReadUInt64();
 			SubKey4 = reader.ReadUInt64();
 		}
-		void IModel.WriteTo(BinaryWriter writer) {
+		readonly void IModel.WriteTo(BinaryWriter writer) {
 			writer.Write(TypeKey);
 			writer.Write(SubKey1);
 			writer.Write(SubKey2);

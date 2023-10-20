@@ -12,7 +12,7 @@ namespace Cryville.Meta.Model {
 			Version = reader.ReadUInt32();
 			PageSize = reader.ReadByte();
 		}
-		public void WriteTo(BinaryWriter writer) {
+		public readonly void WriteTo(BinaryWriter writer) {
 			writer.Write(Magic);
 			writer.Write(Version);
 			writer.Write(PageSize);

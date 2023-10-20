@@ -9,7 +9,7 @@ namespace Cryville.Meta.Model {
 			RootMetonPairPageIndex = reader.ReadUInt32();
 			SummaryLength = reader.ReadUInt32();
 		}
-		public void WriteTo(BinaryWriter writer) {
+		public readonly void WriteTo(BinaryWriter writer) {
 			writer.Write(RootMetonPairPageIndex);
 			writer.Write(SummaryLength);
 		}
