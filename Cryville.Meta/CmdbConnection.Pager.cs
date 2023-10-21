@@ -83,6 +83,8 @@ namespace Cryville.Meta {
 				var alignedSize = GetAlignedSize(_size);
 				if (alignedSize < _lfb.Size) {
 					// A new small block is produced
+					// Seek to the aligned position
+					_self.SeekCurrent(alignedSize - _size);
 					var newSmallBlock = new RootFreeBlockCell(_lfb.Size - alignedSize, _lfb.Pointer + alignedSize);
 					_self.Writer.Write((ulong)_sfb.Pointer);
 					_self.PushFreeBlock(newSmallBlock);
