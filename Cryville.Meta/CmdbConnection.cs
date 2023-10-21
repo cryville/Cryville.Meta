@@ -11,8 +11,8 @@ namespace Cryville.Meta {
 	public partial class CmdbConnection : IDisposable {
 		readonly DirectoryInfo _dir;
 		readonly Stream _stream;
-		readonly CmdbReader _reader;
-		readonly CmdbWriter _writer;
+		internal CmdbReader Reader { get; private set; }
+		internal CmdbWriter Writer { get; private set; }
 		/// <summary>
 		/// Whether the connection is read-only.
 		/// </summary>
@@ -37,8 +37,8 @@ namespace Cryville.Meta {
 				FileSystemUtil.GetDiskBlockSize(path),
 				FileOptions.RandomAccess
 			);
-			_reader = new CmdbReader(_stream);
-			_writer = new CmdbWriter(_stream);
+			Reader = new CmdbReader(_stream);
+			Writer = new CmdbWriter(_stream);
 			_dir = new FileInfo(path).Directory;
 			if (_stream.Length == 0) InitDatabase();
 			else ReadDatabaseHeader();
@@ -71,13 +71,13 @@ namespace Cryville.Meta {
 		CmdbDynamicHeader _dHeader;
 		MetonModel _copula;
 		const ulong CmdbMagicNumber = 0x46444d43;
-		int _pageSize;
+		internal int PageSize { get; private set; }
 		void InitDatabase() {
-			_pageSize = FileSystemUtil.GetDiskBlockSize(_dir.FullName);
+			PageSize = FileSystemUtil.GetDiskBlockSize(_dir.FullName);
 			_sHeader = new CmdbStaticHeader {
 				Magic = CmdbMagicNumber,
 				Version = 0,
-				PageSize = (byte)BitOperations.Log2((uint)_pageSize),
+				PageSize = (byte)BitOperations.Log2((uint)PageSize),
 			};
 			_dHeader = new CmdbDynamicHeader {
 				FileChangeCounter = 0,
@@ -87,32 +87,34 @@ namespace Cryville.Meta {
 				RootMetonPairPageIndex = 0,
 				SummaryLength = 0,
 			};
-			_stream.SetLength(2 * _pageSize);
-			_writer.Write(_sHeader);
-			_stream.Seek(CmdbStaticHeader.Reserved, SeekOrigin.Current);
-			_writer.Write(_dHeader);
-			_stream.Seek(CmdbDynamicHeader.Reserved, SeekOrigin.Current);
-			_writer.Write(_copula);
-			_stream.Seek(_pageSize, SeekOrigin.Begin);
-			for (int i = 0; i < _pageSize / 8; i++) {
-				_writer.Write((ulong)0);
+			_stream.SetLength(2 * PageSize);
+			Writer.Write(_sHeader);
+			SeekCurrent(CmdbStaticHeader.Reserved);
+			Writer.Write(_dHeader);
+			SeekCurrent(CmdbDynamicHeader.Reserved);
+			Writer.Write(_copula);
+			Seek(PageSize);
+			for (int i = 0; i < PageSize / 8; i++) {
+				Writer.Write((ulong)0);
 			}
 		}
 		void ReadDatabaseHeader() {
-			_sHeader = _reader.ReadModel<CmdbStaticHeader>();
-			_stream.Seek(CmdbStaticHeader.Reserved, SeekOrigin.Current);
-			_dHeader = _reader.ReadModel<CmdbDynamicHeader>();
-			_stream.Seek(CmdbDynamicHeader.Reserved, SeekOrigin.Current);
-			_copula = _reader.ReadModel<MetonModel>();
+			_sHeader = Reader.ReadModel<CmdbStaticHeader>();
+			SeekCurrent(CmdbStaticHeader.Reserved);
+			_dHeader = Reader.ReadModel<CmdbDynamicHeader>();
+			SeekCurrent(CmdbDynamicHeader.Reserved);
+			_copula = Reader.ReadModel<MetonModel>();
 			if (_sHeader.Magic != CmdbMagicNumber || _sHeader.Version != 0) throw new InvalidDataException("Invalid database.");
-			_pageSize = 1 << _sHeader.PageSize;
+			PageSize = 1 << _sHeader.PageSize;
 
-			_stream.Seek(_pageSize, SeekOrigin.Begin);
-			for (int i = 8; i <= _pageSize; i += 8) {
-				var ptr = (long)_reader.ReadUInt64();
+			Seek(PageSize);
+			for (int i = 8; i <= PageSize; i += 8) {
+				var ptr = (long)Reader.ReadUInt64();
 				if (ptr == 0) continue;
 				_rfbcs.Add(new RootFreeBlockCell { Size = i, Pointer = ptr });
 			}
 		}
+		internal void Seek(long offset) => _stream.Seek(offset, SeekOrigin.Begin);
+		internal void SeekCurrent(long offset) => _stream.Seek(offset, SeekOrigin.Current);
 	}
 }

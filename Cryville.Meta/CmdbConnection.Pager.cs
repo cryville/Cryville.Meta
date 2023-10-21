@@ -30,8 +30,8 @@ namespace Cryville.Meta {
 				index = ~index;
 				if (index >= _rfbcs.Count) {
 					var len = _stream.Length;
-					_stream.SetLength(len + _pageSize);
-					targetLargeBlock = new(_pageSize, len, true);
+					_stream.SetLength(len + PageSize);
+					targetLargeBlock = new(PageSize, len, true);
 				}
 				else {
 					targetLargeBlock = _rfbcs[index];
@@ -55,27 +55,27 @@ namespace Cryville.Meta {
 				if (index < 0) index = ~index;
 				_rfbcs.Insert(index, block);
 			}
-			_stream.Seek(_pageSize + block.Size - 0x08, SeekOrigin.Begin);
-			_writer.Write(block.Pointer);
+			_stream.Position = PageSize + block.Size - 0x08;
+			Writer.Write(block.Pointer);
 		}
-		readonly struct BlockScope : IDisposable {
+		internal readonly struct BlockScope : IDisposable {
 			readonly CmdbConnection _self;
 			readonly int _size;
 			readonly RootFreeBlockCell _lfb;
 			readonly RootFreeBlockCell _sfb;
 			readonly ulong _ptrNextLargeBlock;
 			internal BlockScope(CmdbConnection self, int size) {
-				Debug.Assert(size > 0 && size <= self._pageSize);
+				Debug.Assert(size > 0 && size <= self.PageSize);
 				_self = self;
 				_size = size;
 				_self.FindFreeBlock(size, out _lfb, out _sfb);
-				_self._stream.Seek(_lfb.Pointer, SeekOrigin.Begin);
+				_self.Seek(_lfb.Pointer);
 				if (_lfb.NewFlag) {
 					_ptrNextLargeBlock = 0;
 				}
 				else {
-					_ptrNextLargeBlock = _self._reader.ReadUInt64();
-					_self._stream.Seek(_lfb.Pointer, SeekOrigin.Begin);
+					_ptrNextLargeBlock = _self.Reader.ReadUInt64();
+					_self.Seek(_lfb.Pointer);
 				}
 			}
 			public void Dispose() {
@@ -84,21 +84,21 @@ namespace Cryville.Meta {
 				if (alignedSize < _lfb.Size) {
 					// A new small block is produced
 					var newSmallBlock = new RootFreeBlockCell(_lfb.Size - alignedSize, _lfb.Pointer + alignedSize);
-					_self._writer.Write((ulong)_sfb.Pointer);
+					_self.Writer.Write((ulong)_sfb.Pointer);
 					_self.PushFreeBlock(newSmallBlock);
 				}
 				_self.PushFreeBlock(new(_lfb.Size, (long)_ptrNextLargeBlock));
 			}
 		}
-		BlockScope AcquireFreeBlock(int size) => new(this, size);
-		void ReleaseBlock(ulong ptr, int size) {
+		internal BlockScope AcquireFreeBlock(int size) => new(this, size);
+		internal void ReleaseBlock(ulong ptr, int size) {
 			Debug.Assert(ptr > 0 && size > 0);
 			int alignedSize = GetAlignedSize(size);
 			var fb = new RootFreeBlockCell(alignedSize, (long)ptr);
 			var index = _rfbcs.BinarySearch(fb);
 			var nextFreeBlockPtr = index < 0 ? 0 : _rfbcs[index].Pointer;
-			_stream.Seek((long)ptr, SeekOrigin.Begin);
-			_writer.Write((ulong)nextFreeBlockPtr);
+			Seek((long)ptr);
+			Writer.Write((ulong)nextFreeBlockPtr);
 			PushFreeBlock(fb);
 		}
 	}
