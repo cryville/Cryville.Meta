@@ -44,7 +44,7 @@ namespace Cryville.Meta {
 			else ReadDatabaseHeader();
 		}
 
-		private int m_isDisposed;
+		int m_isDisposed;
 		/// <summary>
 		/// Whether the connection has been closed.
 		/// </summary>
