@@ -47,7 +47,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BTreeCursor.cs" />
     <Compile Include="BTreeNode.cs" />
+    <Compile Include="CursorRecoveryBehavior.cs" />
     <Compile Include="IBTreeNodeParent.cs" />
     <Compile Include="MetonPair.cs" />
     <Compile Include="MetonPairSet.cs" />
