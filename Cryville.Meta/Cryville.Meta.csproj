@@ -47,6 +47,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BTreeNode.cs" />
     <Compile Include="IBTreeNodeParent.cs" />
     <Compile Include="MetonPair.cs" />
     <Compile Include="MetonPairSet.cs" />

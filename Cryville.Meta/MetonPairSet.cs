@@ -21,6 +21,7 @@ namespace Cryville.Meta {
 			if (Interlocked.Exchange(ref m_isDisposed, 1) > 0) return;
 			if (disposing) {
 				_db.OnMetonPairSetDispose(_ptr);
+				RootNode?.Dispose();
 			}
 		}
 		void CheckDisposed() {
@@ -28,19 +29,21 @@ namespace Cryville.Meta {
 		}
 
 		bool _init;
+		internal BTreeNode RootNode;
 		void LazyInit() {
 			if (_init) return;
 			_init = true;
 			_db.Seek((long)_ptr);
 			var treePtr = _db.Reader.ReadUInt64();
 			if (treePtr != 0) {
+				RootNode = new(_db, this, treePtr);
 			}
 		}
 
 		public int Count {
 			get {
 				LazyInit();
-				throw new NotImplementedException();
+				return RootNode?.TotalCount ?? 0;
 			}
 		}
 
@@ -59,11 +62,13 @@ namespace Cryville.Meta {
 			CheckDisposed();
 			if (IsReadOnly) throw new NotSupportedException("The connection is read-only.");
 			LazyInit();
+			if (RootNode == null) return;
 			throw new NotImplementedException();
 		}
 
 		public bool Contains(MetonPair item) {
 			CheckDisposed();
+			if (RootNode == null) return false;
 			throw new NotImplementedException();
 		}
 
@@ -81,6 +86,7 @@ namespace Cryville.Meta {
 			CheckDisposed();
 			if (IsReadOnly) throw new NotSupportedException("The connection is read-only.");
 			LazyInit();
+			if (RootNode == null) return false;
 			throw new NotImplementedException();
 		}
 
