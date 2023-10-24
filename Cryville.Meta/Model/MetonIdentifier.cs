@@ -3,13 +3,21 @@ using System.IO;
 
 namespace Cryville.Meta.Model {
 	public struct MetonIdentifier : IModel, IComparable<MetonIdentifier> {
-		public long TypeKey { get; set; }
+		public ulong TypeKey { get; set; }
 		public ulong SubKey1 { get; set; }
 		public ulong SubKey2 { get; set; }
 		public ulong SubKey3 { get; set; }
 		public ulong SubKey4 { get; set; }
 
-		internal readonly bool IsBackward => TypeKey < 0;
+		const ulong _pairTypeMask = 0xc000_0000_0000_0000U;
+		internal readonly MetonPairType PairType => (MetonPairType)(TypeKey >> 62);
+		public ulong TypeId {
+			readonly get => TypeKey & ~_pairTypeMask;
+			set {
+				if ((value & _pairTypeMask) != 0) throw new ArgumentOutOfRangeException(nameof(value));
+				TypeKey = (TypeKey & _pairTypeMask) | value;
+			}
+		}
 
 		public readonly int CompareTo(MetonIdentifier other) {
 			int r = TypeKey.CompareTo(other.TypeKey);
@@ -24,7 +32,7 @@ namespace Cryville.Meta.Model {
 		}
 
 		void IModel.ReadFrom(BinaryReader reader) {
-			TypeKey = reader.ReadInt64();
+			TypeKey = reader.ReadUInt64();
 			SubKey1 = reader.ReadUInt64();
 			SubKey2 = reader.ReadUInt64();
 			SubKey3 = reader.ReadUInt64();

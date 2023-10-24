@@ -59,6 +59,7 @@
     <Compile Include="Model\MetonModel.cs" />
     <Compile Include="Model\MetonIdentifier.cs" />
     <Compile Include="Model\MetonPairModel.cs" />
+    <Compile Include="Model\MetonPairType.cs" />
     <Compile Include="Model\ModelExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared.cs" />
