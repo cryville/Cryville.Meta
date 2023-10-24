@@ -19,7 +19,6 @@ namespace Cryville.Meta {
 		}
 
 		internal int BTreeOrder;
-		internal int BTreePointerAreaOffset;
 		internal int BTreeContentAreaOffset;
 		internal int BTreeSize;
 		void ComputeBTreeParameters() {
@@ -33,8 +32,7 @@ namespace Cryville.Meta {
 			 * N = (PageSize - 16) / 106.
 			 */
 			BTreeOrder = (PageSize - 16) / 106;
-			BTreePointerAreaOffset = 8 + 2 * BTreeOrder;
-			BTreeContentAreaOffset = BTreePointerAreaOffset + 8 * (BTreeOrder + 1);
+			BTreeContentAreaOffset = 8 + 10 * BTreeOrder + 8;
 			BTreeSize = 106 * BTreeOrder + 16;
 		}
 	}

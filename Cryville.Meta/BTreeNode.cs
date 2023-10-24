@@ -6,6 +6,7 @@ using System.Threading;
 
 namespace Cryville.Meta {
 	internal class BTreeNode : IBTreeNodeParent, IDisposable {
+		#region Data structure
 		readonly CmdbConnection _db;
 		readonly MetonPairSet _set;
 		public ulong NodePointer { get; private set; }
@@ -26,7 +27,7 @@ namespace Cryville.Meta {
 
 		List<short> _cellIndices;
 		List<ulong> _childPtrs;
-		Queue<int> _freeCells;
+		Queue<short> _freeCells;
 		MetonPairModel[] _metonPairs;
 		List<BTreeNode> _children;
 
@@ -48,7 +49,9 @@ namespace Cryville.Meta {
 				return m_count;
 			}
 		}
+		#endregion
 
+		#region Lifecycle
 		// TODO combine set and parent with interface
 		public BTreeNode(CmdbConnection db, MetonPairSet set, ulong nodePtr) : this(db, set, nodePtr, null) { }
 		BTreeNode(CmdbConnection db, MetonPairSet set, ulong nodePtr, BTreeNode parent) {
@@ -118,11 +121,13 @@ namespace Cryville.Meta {
 			Debug.Assert(_cellIndices.Count <= _db.BTreeOrder);
 			Debug.Assert(_childPtrs.Count <= _db.BTreeOrder + 1);
 
-			for (var i = 0; i < _db.BTreeOrder; i++) {
+			for (short i = 0; i < _db.BTreeOrder; i++) {
 				if (!usedCells.Contains(i)) _freeCells.Enqueue(i);
 			}
 		}
+		#endregion
 
+		#region Read-only methods
 		public MetonPairModel GetMetonPair(int index) {
 			CheckDisposed();
 			LazyInit1();
@@ -157,5 +162,6 @@ namespace Cryville.Meta {
 			result = default;
 			return ~l;
 		}
+		#endregion
 	}
 }

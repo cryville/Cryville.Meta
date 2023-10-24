@@ -7,6 +7,9 @@ namespace Cryville.Meta {
 	public class MetonPairSet : IBTreeNodeParent, ICollection<MetonPair>, IEnumerable<MetonPair>, ICollection, IEnumerable, IDisposable {
 		readonly CmdbConnection _db;
 		readonly ulong _ptr;
+		internal BTreeNode RootNode;
+
+		#region Lifecycle
 		internal MetonPairSet(CmdbConnection db, ulong ptr) {
 			_db = db;
 			_ptr = ptr;
@@ -29,7 +32,6 @@ namespace Cryville.Meta {
 		}
 
 		bool _init;
-		internal BTreeNode RootNode;
 		void LazyInit() {
 			if (_init) return;
 			_init = true;
@@ -39,6 +41,7 @@ namespace Cryville.Meta {
 				RootNode = new(_db, this, treePtr);
 			}
 		}
+		#endregion
 
 		public int Count {
 			get {
