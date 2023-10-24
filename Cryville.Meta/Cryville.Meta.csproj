@@ -47,9 +47,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IBTreeNodeParent.cs" />
+    <Compile Include="MetonPair.cs" />
+    <Compile Include="MetonPairSet.cs" />
     <Compile Include="CmdbConnection.cs" />
     <Compile Include="CmdbConnection.Pager.cs" />
     <Compile Include="CmdbConnection.Query.cs" />
+    <Compile Include="CmdbConnection.Tree.cs" />
     <Compile Include="CmdbReader.cs" />
     <Compile Include="CmdbWriter.cs" />
     <Compile Include="Meton.cs" />

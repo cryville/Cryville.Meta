@@ -42,6 +42,7 @@ namespace Cryville.Meta {
 			_dir = new FileInfo(path).Directory;
 			if (_stream.Length == 0) InitDatabase();
 			else ReadDatabaseHeader();
+			ComputeBTreeParameters();
 		}
 
 		int m_isDisposed;
@@ -56,6 +57,7 @@ namespace Cryville.Meta {
 		protected virtual void Dispose(bool disposing) {
 			if (Interlocked.Exchange(ref m_isDisposed, 1) > 0) return;
 			if (disposing) {
+				ReleaseMetonPairSets();
 				_stream.Dispose();
 			}
 		}
