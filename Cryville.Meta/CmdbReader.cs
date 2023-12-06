@@ -1,9 +1,7 @@
 using System.IO;
 
 namespace Cryville.Meta {
-	internal class CmdbReader : BinaryReader {
-		public CmdbReader(Stream input) : base(input, Shared.Encoding) { }
-
+	internal class CmdbReader(Stream input) : BinaryReader(input, Shared.Encoding) {
 		protected override void Dispose(bool disposing) {
 			// Do nothing
 		}

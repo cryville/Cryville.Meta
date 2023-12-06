@@ -4,6 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace Cryville.Meta.Util.Platform {
 	internal class WindowsNativeFunctions : NativeWrapper {
+#if NET45_OR_GREATER || NETSTANDARD1_1_OR_GREATER || NETCOREAPP1_0_OR_GREATER
+		[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+#endif
 		[DllImport("Kernel32.dll")]
 		static extern bool GetDiskFreeSpaceW(
 			[MarshalAs(UnmanagedType.LPWStr)] string lpRootPathName,

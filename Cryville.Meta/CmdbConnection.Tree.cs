@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Cryville.Meta {
 	public partial class CmdbConnection {
-		readonly Dictionary<ulong, MetonPairSet> _mpts = new();
+		readonly Dictionary<ulong, MetonPairSet> _mpts = [];
 		internal MetonPairSet OpenMetonPairSet(ulong ptr) {
 			Debug.Assert(ptr > 0 && (ptr & 0x07) == 0);
 			if (!_mpts.TryGetValue(ptr, out var ret)) {

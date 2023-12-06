@@ -1,9 +1,7 @@
 using System.IO;
 
 namespace Cryville.Meta {
-	internal class CmdbWriter : BinaryWriter {
-		public CmdbWriter(Stream output) : base(output, Shared.Encoding) { }
-
+	internal class CmdbWriter(Stream output) : BinaryWriter(output, Shared.Encoding) {
 		protected override void Dispose(bool disposing) {
 			// Do nothing
 		}

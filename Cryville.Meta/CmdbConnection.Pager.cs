@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Cryville.Meta {
 	public partial class CmdbConnection {
-		readonly List<RootFreeBlockCell> _rfbcs = new();
+		readonly List<RootFreeBlockCell> _rfbcs = [];
 		struct RootFreeBlockCell : IComparable<RootFreeBlockCell> {
 			public int Size;
 			public long Pointer;
@@ -15,7 +15,7 @@ namespace Cryville.Meta {
 				Pointer = pointer;
 				NewFlag = newFlag;
 			}
-			public int CompareTo(RootFreeBlockCell other) => Size.CompareTo(other.Size);
+			public readonly int CompareTo(RootFreeBlockCell other) => Size.CompareTo(other.Size);
 		}
 		static int GetAlignedSize(int size) {
 			var alignedSize = size & ~0x07;

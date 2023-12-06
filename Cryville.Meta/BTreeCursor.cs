@@ -4,23 +4,15 @@ using System.Collections;
 using System.Collections.Generic;
 
 namespace Cryville.Meta {
-	internal class BTreeCursor : IEnumerator<MetonPairModel>, IEnumerator {
-		readonly MetonPairSet _set;
+	internal class BTreeCursor(MetonPairSet set) : IEnumerator<MetonPairModel>, IEnumerator {
+		readonly MetonPairSet _set = set;
 		readonly Stack<Frame> _stack = new();
-		struct Frame {
-			public BTreeNode Node;
-			public int Version;
-			public int Index;
-			public Frame(BTreeNode node, int index) {
-				Node = node;
-				Version = node.Version;
-				Index = index;
-			}
+		struct Frame(BTreeNode node, int index) {
+			public BTreeNode Node = node;
+			public int Version = node.Version;
+			public int Index = index;
 		}
 
-		public BTreeCursor(MetonPairSet set) {
-			_set = set;
-		}
 		public void Dispose() { }
 
 		public void Reset() {

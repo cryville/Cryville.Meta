@@ -18,7 +18,10 @@ namespace Cryville.Meta.Util.Platform {
 			public ulong f_flag;
 			public ulong f_namemax;
 		}
-		[DllImport("c")]
+#if NET45_OR_GREATER || NETSTANDARD1_1_OR_GREATER || NETCOREAPP1_0_OR_GREATER
+		[DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
+#endif
+		[DllImport("c", BestFitMapping = false)]
 		static extern int statvfs([MarshalAs(UnmanagedType.LPStr)] string path, out f_statvfs buf);
 		public override int GetDiskBlockSize(string path) {
 			if (statvfs(path, out var result) != 0)
