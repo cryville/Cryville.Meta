@@ -23,6 +23,8 @@ namespace Cryville.Meta {
 			Reset();
 			_state = 0;
 			var node = _set.RootNode;
+			if (node == null)
+				return false;
 			while (true) {
 				var index = node.BinarySearch(value, out _);
 				if (index < 0) {
@@ -55,7 +57,9 @@ namespace Cryville.Meta {
 		public bool MoveNext() => MoveNext(CursorRecoveryBehavior.Skip);
 		public bool MoveNext(CursorRecoveryBehavior recoveryBehavior) {
 			if (_state == -2) {
-				PushPreorder(new(_set.RootNode, 0));
+				var root = _set.RootNode;
+				if (root != null)
+					PushPreorder(new(root, 0));
 				_state = 0;
 			}
 			while (_stack.Count > 0) {
