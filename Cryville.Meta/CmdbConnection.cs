@@ -86,7 +86,7 @@ namespace Cryville.Meta {
 				PageCount = 1,
 			};
 			_copula = new MetonModel {
-				RootMetonPairPageIndex = 0,
+				RootNodePointer = 0,
 				SummaryLength = 0,
 			};
 			_stream.SetLength(2 * PageSize);

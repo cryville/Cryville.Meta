@@ -2,15 +2,15 @@ using System.IO;
 
 namespace Cryville.Meta.Model {
 	internal struct MetonModel : IModel {
-		public uint RootMetonPairPageIndex;
-		public uint SummaryLength;
+		public ulong RootNodePointer;
+		public ulong SummaryLength;
 
 		public void ReadFrom(BinaryReader reader) {
-			RootMetonPairPageIndex = reader.ReadUInt32();
-			SummaryLength = reader.ReadUInt32();
+			RootNodePointer = reader.ReadUInt64();
+			SummaryLength = reader.ReadUInt64();
 		}
 		public readonly void WriteTo(BinaryWriter writer) {
-			writer.Write(RootMetonPairPageIndex);
+			writer.Write(RootNodePointer);
 			writer.Write(SummaryLength);
 		}
 	}
