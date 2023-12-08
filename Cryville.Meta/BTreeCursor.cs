@@ -43,7 +43,25 @@ namespace Cryville.Meta {
 		}
 		public bool Add(MetonPairModel value) {
 			if (Search(value)) return false;
-			// TODO
+			if (_stack.Count == 0) {
+				// Create root
+				_set.CreateRootNode(value);
+				return true;
+			}
+			var frame = _stack.Pop();
+			if (frame.Node.IsFull) {
+				int carryIndex = frame.Index;
+				BTreeNode? carryChild = null;
+				while (_stack.Count > 0) {
+					frame = _stack.Pop();
+					if (frame.Node.SplitInsert(frame.Index, ref value, ref carryChild, carryIndex))
+						return true;
+					carryIndex = frame.Index;
+				}
+				// Split root
+				_set.SplitInsert(value, carryChild, carryIndex);
+			}
+			else frame.Node.Insert(frame.Index, value);
 			return true;
 		}
 		public bool Remove(MetonPairModel value) {

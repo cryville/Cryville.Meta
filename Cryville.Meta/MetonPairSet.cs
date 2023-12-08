@@ -1,13 +1,17 @@
+using Cryville.Meta.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Cryville.Meta {
-	public class MetonPairSet : IBTreeNodeParent, ICollection<MetonPair>, IEnumerable<MetonPair>, ICollection, IEnumerable, IDisposable {
+	public class MetonPairSet : ICollection<MetonPair>, IEnumerable<MetonPair>, ICollection, IEnumerable, IDisposable {
 		readonly CmdbConnection _db;
 		readonly ulong _ptr;
-		internal BTreeNode RootNode;
+		ulong _nodePointer;
+		internal BTreeNode? RootNode;
 
 		#region Lifecycle
 		internal MetonPairSet(CmdbConnection db, ulong ptr) {
@@ -36,9 +40,9 @@ namespace Cryville.Meta {
 			if (_init) return;
 			_init = true;
 			_db.Seek((long)_ptr);
-			var treePtr = _db.Reader.ReadUInt64();
-			if (treePtr != 0) {
-				RootNode = new(_db, this, treePtr);
+			_nodePointer = _db.Reader.ReadUInt64();
+			if (_nodePointer != 0) {
+				RootNode = new(_db, _nodePointer);
 			}
 		}
 		#endregion
@@ -53,6 +57,32 @@ namespace Cryville.Meta {
 		public bool IsReadOnly => _db.IsReadOnly;
 		public object SyncRoot => this;
 		public bool IsSynchronized => false;
+
+		internal void CreateRootNode(MetonPairModel value) {
+			CheckDisposed();
+			LazyInit();
+
+			Debug.Assert(RootNode == null);
+			RootNode = BTreeNode.Create(_db, null);
+			RootNode.Insert(0, value);
+			_db.Seek((long)_ptr);
+			_db.Writer.Write(_nodePointer = RootNode.NodePointer);
+		}
+
+		[SuppressMessage("Reliability", "CA2000")]
+		internal void SplitInsert(MetonPairModel carry, BTreeNode? carryChild, int carryIndex) {
+			CheckDisposed();
+			LazyInit();
+
+			Debug.Assert(RootNode != null);
+			BTreeNode.SplitInsert(_db, RootNode, ref carry, ref carryChild, carryIndex);
+
+			RootNode = BTreeNode.Create(_db, RootNode);
+			RootNode.InsertInternal(0, carry, carryChild);
+			RootNode.WriteCellIndices(0);
+			_db.Seek((long)_ptr);
+			_db.Writer.Write(_nodePointer = RootNode.NodePointer);
+		}
 
 		public void Add(MetonPair item) {
 			CheckDisposed();

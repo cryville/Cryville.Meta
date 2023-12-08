@@ -65,6 +65,7 @@ namespace Cryville.Meta {
 			readonly RootFreeBlockCell _lfb;
 			readonly RootFreeBlockCell _sfb;
 			readonly ulong _ptrNextLargeBlock;
+			public ulong Pointer => (ulong)_lfb.Pointer;
 			internal BlockScope(CmdbConnection self, int size) {
 				Debug.Assert(size > 0 && size <= self.PageSize);
 				_self = self;
