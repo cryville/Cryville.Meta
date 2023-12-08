@@ -88,7 +88,7 @@ namespace Cryville.Meta {
 			while (true) {
 				_stack.Push(frame);
 				if (frame.Node.IsLeaf) return;
-				frame = new(frame.Node.GetChildNode(0), 0);
+				frame = new(frame.Node.GetChildNode(frame.Index), 0);
 			}
 		}
 	}
