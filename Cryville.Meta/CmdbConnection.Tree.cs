@@ -22,7 +22,7 @@ namespace Cryville.Meta {
 		internal int BTreeContentAreaOffset;
 		internal int BTreeSize;
 		void ComputeBTreeParameters() {
-			/**
+			/*
 			 * A B-tree page of order N consists of:
 			 * - an 8-byte "total count" field,
 			 * - N 2-byte cell indices,

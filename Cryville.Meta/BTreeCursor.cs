@@ -2,9 +2,11 @@ using Cryville.Meta.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Cryville.Meta {
 	internal class BTreeCursor(MetonPairSet set) : IEnumerator<MetonPairModel>, IEnumerator {
+		[SuppressMessage("Usage", "CA2213")]
 		readonly MetonPairSet _set = set;
 		readonly Stack<Frame> _stack = new();
 		struct Frame(BTreeNode node, int index) {
