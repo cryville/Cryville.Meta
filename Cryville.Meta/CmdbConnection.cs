@@ -75,11 +75,18 @@ namespace Cryville.Meta {
 		const ulong CmdbMagicNumber = 0x46444d43;
 		internal int PageSize { get; private set; }
 		void InitDatabase() {
-			PageSize = FileSystemUtil.GetDiskBlockSize(_dir.FullName);
+			try {
+				PageSize = FileSystemUtil.GetDiskBlockSize(_dir.FullName);
+			}
+			catch (InvalidOperationException) {
+				PageSize = 512;
+			}
+			var pageSizeParam = Math.Max((byte)8, Math.Min((byte)21, (byte)BitOperations.Log2((uint)PageSize)));
+			PageSize = 1 << pageSizeParam;
 			_sHeader = new CmdbStaticHeader {
 				Magic = CmdbMagicNumber,
 				Version = 0,
-				PageSize = (byte)BitOperations.Log2((uint)PageSize),
+				PageSize = pageSizeParam,
 			};
 			_dHeader = new CmdbDynamicHeader {
 				FileChangeCounter = 0,
