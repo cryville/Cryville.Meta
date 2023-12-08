@@ -35,7 +35,9 @@ namespace Cryville.Meta {
 				else {
 					targetLargeBlock = _rfbcs[index];
 				}
-				var index2 = _rfbcs.BinarySearch(new(targetLargeBlock.Size - alignedSize));
+				int index2 = -1;
+				if (alignedSize < PageSize)
+					index2 = _rfbcs.BinarySearch(new(targetLargeBlock.Size - alignedSize));
 				nextSmallBlock = index2 < 0 ? default : _rfbcs[index2];
 			}
 			else {
