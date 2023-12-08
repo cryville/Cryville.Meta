@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Threading;
 
 namespace Cryville.Meta {
-	internal class BTreeNode : IBTreeNodeParent, IDisposable {
+	internal class BTreeNode : IDisposable {
 		#region Data structure
 		readonly CmdbConnection _db;
 		readonly MetonPairSet _set;
