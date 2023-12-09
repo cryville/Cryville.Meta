@@ -279,7 +279,7 @@ namespace Cryville.Meta {
 					_childPtrs = new(db.BTreeOrder + 1) { firstChildPtr },
 					_freeCells = new(db.BTreeOrder),
 					_metonPairs = new MetonPairModel[db.BTreeOrder],
-					_children = new(db.BTreeOrder + 1) { null },
+					_children = new(db.BTreeOrder + 1) { firstChild },
 					m_count = 0,
 				}
 			};
