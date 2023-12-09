@@ -1,9 +1,11 @@
 using Cryville.Meta.Model;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 
 namespace Cryville.Meta.Test {
 	public class InternalTests {
@@ -36,14 +38,20 @@ namespace Cryville.Meta.Test {
 				_stopwatch.Reset();
 				_stopwatch.Start();
 				write?.Invoke();
-				TestContext.WriteLine("Write time: {0:F3} ms", (double)_stopwatch.ElapsedTicks / Stopwatch.Frequency * 1000);
+				LogTime("Write");
 			}
 			using (_db = new CmdbConnection(TestPath)) {
 				_stopwatch.Reset();
 				_stopwatch.Start();
 				read?.Invoke();
-				TestContext.WriteLine("Read time: {0:F3} ms", (double)_stopwatch.ElapsedTicks / Stopwatch.Frequency * 1000);
+				LogTime("Read");
 			}
+		}
+
+		void LogTime(string prefix) {
+			TestContext.WriteLine("{0}: {1:F3} ms", prefix, (double)_stopwatch.ElapsedTicks / Stopwatch.Frequency * 1000);
+			_stopwatch.Reset();
+			_stopwatch.Start();
 		}
 
 		[Test]
@@ -175,6 +183,46 @@ namespace Cryville.Meta.Test {
 						Assert.That(cursor.MoveNext());
 						Assert.That(cursor.Current, Is.EqualTo(pair));
 						pair.Key.TypeKey++;
+					}
+					Assert.That(!cursor.MoveNext());
+				}
+			);
+		}
+
+		[Test]
+		[SuppressMessage("Assertion", "NUnit2045")]
+		public void CursorAddRandom() {
+			var random = new Random();
+			IEnumerable<MetonPairModel> pairs = null;
+			TestVerify(
+				() => {
+					pairs = Enumerable.Repeat(0, (_db.BTreeOrder + 2) * _db.BTreeOrder + 1).Select(
+						i => new MetonPairModel {
+							KeyPointer = 233,
+							ValuePointer = 2333,
+							Key = new MetonIdentifier { TypeKey = 0xd000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
+							Value = new MetonIdentifier { TypeKey = 0x0000_0000_0000_0000, SubKey1 = 0xfedc_ba98_7654_3210 },
+						}
+					).Distinct().ToArray();
+					TestContext.WriteLine("Count: {0}", pairs.Count());
+					LogTime("Generate pairs");
+					using (var block = _db.AcquireFreeBlock(_db.PageSize)) {
+						_db.Writer.Write((ulong)0);
+						_db.SeekCurrent(_db.PageSize - 8);
+					}
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					var cursor = new BTreeCursor(set);
+					foreach (var pair in pairs) {
+						Assert.That(cursor.Add(pair));
+					}
+				},
+				() => {
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					_ = set.Count; // Initialize the set
+					var cursor = new BTreeCursor(set);
+					foreach (var pair in pairs.OrderBy(i => i)) {
+						Assert.That(cursor.MoveNext());
+						Assert.That(cursor.Current, Is.EqualTo(pair));
 					}
 					Assert.That(!cursor.MoveNext());
 				}
