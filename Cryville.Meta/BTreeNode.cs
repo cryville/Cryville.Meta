@@ -112,7 +112,6 @@ namespace Cryville.Meta {
 				}
 				if (data.m_count == _db.BTreeOrder) {
 					var ptr = _db.Reader.ReadUInt64();
-					Debug.Assert(ptr > 0);
 					data._childPtrs.Add(ptr);
 					data._children.Add(null);
 				}
