@@ -50,7 +50,7 @@ namespace Cryville.Meta.Test {
 		public void Pager() {
 			TestVerify(
 				() => {
-					CmdbConnection.BlockScope block1, block2;
+					CmdbConnection.BlockScope block1, block2, block3;
 					using (block1 = _db.AcquireFreeBlock(128)) {
 						_db.Writer.Write(new byte[128]);
 					}
@@ -63,8 +63,12 @@ namespace Cryville.Meta.Test {
 					using (_db.AcquireFreeBlock(129)) {
 						_db.Writer.Write(new byte[129]);
 					}
+					using (block3 = _db.AcquireFreeBlock(_db.PageSize)) {
+						_db.Writer.Write(new byte[_db.PageSize]);
+					}
 					_db.ReleaseBlock(block2.Pointer, 128);
 					_db.ReleaseBlock(block1.Pointer, 128);
+					_db.ReleaseBlock(block3.Pointer, _db.PageSize);
 				},
 				null
 			);
