@@ -178,6 +178,7 @@ namespace Cryville.Meta {
 		#endregion
 
 		#region Write methods
+		#region Internal
 		/// <summary>
 		/// Writes the cell indices into the database file.
 		/// </summary>
@@ -232,7 +233,7 @@ namespace Cryville.Meta {
 		/// <param name="index">The index where the child to be removed is.</param>
 		/// <param name="value">The removed meton pair.</param>
 		/// <param name="child">The child node on the right of the removed meton pair.</param>
-		void RemoveInternal(int index, out MetonPairModel value, out BTreeNode? child) {
+		internal void RemoveInternal(int index, out MetonPairModel value, out BTreeNode? child) {
 			var data = LazyData;
 
 			--data.m_count;
@@ -245,29 +246,10 @@ namespace Cryville.Meta {
 			child = data._children[index];
 			data._childPtrs.RemoveAt(index);
 			data._children.RemoveAt(index);
-
 		}
-		public void Insert(int index, MetonPairModel value) {
-			CheckDisposed();
-			var data = LazyData;
-			Debug.Assert(IsLeaf);
-			Debug.Assert(!IsFull);
-			Debug.Assert(index >= 0 && index <= data.m_count);
+		#endregion
 
-			InsertInternal(index, value, null);
-			WriteCellIndices(index);
-		}
-		public void Remove(int index) {
-			CheckDisposed();
-			var data = LazyData;
-			Debug.Assert(IsLeaf);
-			Debug.Assert(data.m_count > 0);
-			Debug.Assert(index >= 0 && index < data.m_count);
-
-			RemoveInternal(index, out _, out _);
-			WriteCellIndices(index);
-		}
-
+		#region Insert
 		internal static BTreeNode Create(CmdbConnection db, BTreeNode? firstChild) {
 			var firstChildPtr = firstChild?.NodePointer ?? 0UL;
 			using var block = db.AcquireFreeBlock(db.BTreeSize);
@@ -292,14 +274,16 @@ namespace Cryville.Meta {
 			db.SeekCurrent(db.BTreeSize - 0x12);
 			return ret;
 		}
-		void Release() {
+		public void Insert(int index, MetonPairModel value) {
+			CheckDisposed();
 			var data = LazyData;
-			Debug.Assert(data.m_count == 0);
-			// TODO Set parent pointer
-			_db.ReleaseBlock(NodePointer, _db.BTreeSize);
-			Dispose();
-		}
+			Debug.Assert(IsLeaf);
+			Debug.Assert(!IsFull);
+			Debug.Assert(index >= 0 && index <= data.m_count);
 
+			InsertInternal(index, value, null);
+			WriteCellIndices(index);
+		}
 		public bool SplitInsert(int index, ref MetonPairModel carry, ref BTreeNode? carryChild, int carryIndex) {
 			CheckDisposed();
 			var data = LazyData;
@@ -318,7 +302,6 @@ namespace Cryville.Meta {
 				return false;
 			}
 		}
-
 		internal static void SplitInsert(CmdbConnection db, BTreeNode splitNode, ref MetonPairModel carry, ref BTreeNode? carryChild, int carryIndex) {
 			Debug.Assert(splitNode.IsFull);
 			var leftCount = db.BTreeOrder / 2;
@@ -348,6 +331,27 @@ namespace Cryville.Meta {
 			splitNode.WriteCellIndices(Math.Min(leftCount, carryIndex));
 			carryChild.WriteCellIndices(0);
 		}
+		#endregion
+
+		#region Remove
+		void Release() {
+			var data = LazyData;
+			Debug.Assert(data.m_count == 0);
+			// TODO Set parent pointer
+			_db.ReleaseBlock(NodePointer, _db.BTreeSize);
+			Dispose();
+		}
+		public void Remove(int index) {
+			CheckDisposed();
+			var data = LazyData;
+			Debug.Assert(IsLeaf);
+			Debug.Assert(data.m_count > 0);
+			Debug.Assert(index >= 0 && index < data.m_count);
+
+			RemoveInternal(index, out _, out _);
+			WriteCellIndices(index);
+		}
+		#endregion
 		#endregion
 	}
 }
