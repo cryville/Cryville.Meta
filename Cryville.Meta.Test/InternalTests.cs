@@ -260,5 +260,44 @@ namespace Cryville.Meta.Test {
 				}
 			);
 		}
+
+		[Test]
+		public void CursorRemoveRandom() {
+			var random = new Random();
+			IEnumerable<MetonPairModel> pairs = null;
+			TestVerify(
+				() => {
+					pairs = Enumerable.Repeat(0, (_db.BTreeOrder + 2) * _db.BTreeOrder + 1).Select(
+						i => new MetonPairModel {
+							KeyPointer = 233,
+							ValuePointer = 2333,
+							Key = new MetonIdentifier { TypeKey = 0xd000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
+							Value = new MetonIdentifier { TypeKey = 0x0000_0000_0000_0000, SubKey1 = 0xfedc_ba98_7654_3210 },
+						}
+					).Distinct().ToArray();
+					TestContext.WriteLine("Count: {0}", pairs.Count());
+					LogTime("Generate pairs");
+					using (var block = _db.AcquireFreeBlock(_db.PageSize)) {
+						_db.Writer.Write((ulong)0);
+						_db.SeekCurrent(_db.PageSize - 8);
+					}
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					var cursor = new BTreeCursor(set);
+					foreach (var pair in pairs) {
+						Assert.That(cursor.Add(pair));
+					}
+				},
+				() => {
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					_ = set.Count; // Initialize the set
+					var cursor = new BTreeCursor(set);
+					foreach (var pair in pairs.OrderBy(i => random.Next())) {
+						Assert.That(cursor.Remove(pair));
+					}
+					cursor.Reset();
+					Assert.That(!cursor.MoveNext());
+				}
+			);
+		}
 	}
 }
