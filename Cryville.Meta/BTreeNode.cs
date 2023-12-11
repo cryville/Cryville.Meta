@@ -410,29 +410,10 @@ namespace Cryville.Meta {
 					return true;
 				}
 			}
-			if (leftNode != null) {
-				RemoveInternal(index, out var carry, out var carryChild, false);
-				var startIndex = leftNode.Count;
-				leftNode.InsertInternal(startIndex, carry, carryChild!.GetChildNodeRaw(0), false);
-				while (carryChild!.Count > 0) {
-					carryChild.RemoveInternal(0, out var carry1, out var carryChild1, false);
-					leftNode.InsertInternal(leftNode.Count, carry1, carryChild1, false);
-				}
-				carryChild.Release();
-				leftNode.WriteCellIndices(startIndex, false);
-				WriteCellIndices(index);
-			}
-			else if (rightNode != null) {
-				RemoveInternal(index, out var carry, out var carryChild, true);
-				rightNode.InsertInternal(0, carry, carryChild!.GetChildNodeRaw(carryChild.Count), true);
-				while (carryChild!.Count > 0) {
-					carryChild.RemoveInternal(carryChild.Count - 1, out var carry1, out var carryChild1, true);
-					rightNode.InsertInternal(0, carry1, carryChild1, true);
-				}
-				carryChild.Release();
-				rightNode.WriteCellIndices(0, true);
-				WriteCellIndices(index, true);
-			}
+			if (leftNode != null)
+				Merge(index - 1, leftNode);
+			else if (rightNode != null)
+				Merge(index, node);
 			else throw new InvalidOperationException("Unreachable");
 			return IsHalfFull;
 		}
@@ -442,6 +423,18 @@ namespace Cryville.Meta {
 			dest.InsertInternal(destIndex, GetMetonPair(index), carryChild, !leftSided);
 			dest.WriteCellIndices(destIndex, !leftSided);
 			ReplaceInternal(index, carry);
+		}
+		void Merge(int index, BTreeNode targetNode) {
+			RemoveInternal(index, out var carry, out var carryChild);
+			var startIndex = targetNode.Count;
+			targetNode.InsertInternal(startIndex, carry, carryChild!.GetChildNodeRaw(0));
+			while (carryChild!.Count > 0) {
+				carryChild.RemoveInternal(0, out var carry1, out var carryChild1);
+				targetNode.InsertInternal(targetNode.Count, carry1, carryChild1);
+			}
+			carryChild.Release();
+			targetNode.WriteCellIndices(startIndex);
+			WriteCellIndices(index);
 		}
 		#endregion
 		#endregion
