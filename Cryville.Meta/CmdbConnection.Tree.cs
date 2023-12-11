@@ -3,19 +3,19 @@ using System.Diagnostics;
 
 namespace Cryville.Meta {
 	public partial class CmdbConnection {
-		readonly Dictionary<ulong, MetonPairSet> _mpts = [];
+		readonly Dictionary<ulong, MetonPairSet> _mpss = [];
 		internal MetonPairSet OpenMetonPairSet(ulong ptr) {
 			Debug.Assert(ptr > 0 && (ptr & 0x07) == 0);
-			if (!_mpts.TryGetValue(ptr, out var ret)) {
-				_mpts.Add(ptr, ret = new(this, ptr));
+			if (!_mpss.TryGetValue(ptr, out var ret)) {
+				_mpss.Add(ptr, ret = new(this, ptr));
 			}
 			return ret;
 		}
 		internal void OnMetonPairSetDispose(ulong ptr) {
-			_mpts.Remove(ptr);
+			_mpss.Remove(ptr);
 		}
 		void ReleaseMetonPairSets() {
-			foreach (var set in _mpts) set.Value.Dispose();
+			foreach (var set in _mpss) set.Value.Dispose();
 		}
 
 		internal int BTreeOrder;
