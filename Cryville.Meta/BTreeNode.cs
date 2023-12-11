@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 
 namespace Cryville.Meta {
+	[DebuggerDisplay("Count = {Count}")]
 	[DebuggerTypeProxy(typeof(BTreeNodeDebugView))]
 	internal class BTreeNode : IDisposable {
 		#region Data structure
