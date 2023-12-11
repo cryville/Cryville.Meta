@@ -46,6 +46,8 @@ namespace Cryville.Meta {
 			}
 		}
 		public bool IsFull => Count == _db.BTreeOrder;
+		public bool CanRotateOut => Count > _db.BTreeOrder / 2;
+		public bool IsHalfFull => Count >= _db.BTreeOrder / 2;
 		#endregion
 
 		#region Lifecycle
@@ -147,14 +149,19 @@ namespace Cryville.Meta {
 			}
 			return pair;
 		}
-		public BTreeNode GetChildNode(int index) {
+		BTreeNode? GetChildNodeRaw(int index) {
 			CheckDisposed();
 			var data = LazyData;
-			Debug.Assert(!IsLeaf);
 			Debug.Assert(index >= 0 || index <= Count);
+			if (IsLeaf) return null;
 			var ret = data._children[index];
 			if (ret == null) data._children[index] = ret = new(_db, data._childPtrs[index]);
 			return ret;
+		}
+		public BTreeNode GetChildNode(int index) {
+			var ret = GetChildNodeRaw(index);
+			Debug.Assert(!IsLeaf);
+			return ret!;
 		}
 		public int BinarySearch(MetonPairModel value, out MetonPairModel result) {
 			CheckDisposed();
@@ -183,10 +190,15 @@ namespace Cryville.Meta {
 		/// Writes the cell indices into the database file.
 		/// </summary>
 		/// <param name="index">The start index where the cell indices are to be written.</param>
-		internal void WriteCellIndices(int index) {
+		/// <param name="leftSided">Whether to write the left child of the pair at the start index.</param>
+		internal void WriteCellIndices(int index, bool leftSided = false) {
 			var data = LazyData;
 			Debug.Assert(index <= data.m_count);
-			SeekToCellIndex(index);
+			if (leftSided) {
+				SeekToChildPointer(index);
+				_db.Writer.Write(data._childPtrs[index]);
+			}
+			else SeekToCellIndex(index);
 			for (var i = index; i < data.m_count;) {
 				_db.Writer.Write(data._cellIndices[i]);
 				_db.Writer.Write(data._childPtrs[++i]);
@@ -200,7 +212,8 @@ namespace Cryville.Meta {
 		/// <param name="index">The index where the child is to be inserted.</param>
 		/// <param name="value">The meton pair to be inserted.</param>
 		/// <param name="child">The child node on the right of the meton pair.</param>
-		internal void InsertInternal(int index, MetonPairModel value, BTreeNode? child) {
+		/// <param name="leftSided">Whether to insert the child as the left child or the right child.</param>
+		internal void InsertInternal(int index, MetonPairModel value, BTreeNode? child, bool leftSided = false) {
 			var data = LazyData;
 
 			Debug.Assert(value.Key.PairType != MetonPairType.None);
@@ -212,13 +225,13 @@ namespace Cryville.Meta {
 			data._cellIndices.Insert(index, cellIndex);
 			data._metonPairs[cellIndex] = value;
 
-			index++;
 			Debug.Assert(child == null == IsLeaf);
 			if (child == null) {
 				data._childPtrs.Add(0);
 				data._children.Add(null);
 			}
 			else {
+				if (!leftSided) index++;
 				data._childPtrs.Insert(index, child.NodePointer);
 				data._children.Insert(index, child);
 			}
@@ -233,7 +246,8 @@ namespace Cryville.Meta {
 		/// <param name="index">The index where the child to be removed is.</param>
 		/// <param name="value">The removed meton pair.</param>
 		/// <param name="child">The child node on the right of the removed meton pair.</param>
-		internal void RemoveInternal(int index, out MetonPairModel value, out BTreeNode? child) {
+		/// <param name="leftSided">Whether to remove the left child or the right child.</param>
+		internal void RemoveInternal(int index, out MetonPairModel value, out BTreeNode? child, bool leftSided = false) {
 			var data = LazyData;
 
 			--data.m_count;
@@ -242,10 +256,24 @@ namespace Cryville.Meta {
 			data._freeCells.Enqueue(cellIndex);
 			data._cellIndices.RemoveAt(index);
 
-			index++;
+			if (!leftSided) index++;
 			child = data._children[index];
 			data._childPtrs.RemoveAt(index);
 			data._children.RemoveAt(index);
+		}
+		internal void ReplaceInternal(int index, MetonPairModel value) {
+			var data = LazyData;
+
+			Debug.Assert(value.Key.PairType != MetonPairType.None);
+			Debug.Assert(value.KeyPointer != 0);
+			Debug.Assert(value.Value.PairType == MetonPairType.None);
+			Debug.Assert(value.ValuePointer != 0);
+
+			short cellIndex = data._cellIndices[index];
+			data._metonPairs[cellIndex] = value;
+
+			SeekToCell(cellIndex);
+			_db.Writer.Write(value);
 		}
 		#endregion
 
@@ -334,12 +362,14 @@ namespace Cryville.Meta {
 		#endregion
 
 		#region Remove
-		void Release() {
+		internal BTreeNode? Release() {
 			var data = LazyData;
 			Debug.Assert(data.m_count == 0);
-			// TODO Set parent pointer
+			var child = data._children[0];
+			data._children.RemoveAt(0);
 			_db.ReleaseBlock(NodePointer, _db.BTreeSize);
 			Dispose();
+			return child;
 		}
 		public void Remove(int index) {
 			CheckDisposed();
@@ -350,6 +380,66 @@ namespace Cryville.Meta {
 
 			RemoveInternal(index, out _, out _);
 			WriteCellIndices(index);
+		}
+		public void SwapRemove(BTreeNode targetNode, int targetIndex) {
+			var index = Count - 1;
+			targetNode.ReplaceInternal(targetIndex, GetMetonPair(index));
+			Remove(index);
+		}
+		public bool RotateOrMerge(int index) {
+			CheckDisposed();
+			_ = LazyData;
+			Debug.Assert(!IsLeaf);
+
+			var node = GetChildNode(index);
+			Debug.Assert(!node.IsHalfFull);
+			BTreeNode? leftNode = null, rightNode = null;
+			if (index > 0) {
+				leftNode = GetChildNode(index - 1);
+				if (leftNode.CanRotateOut) {
+					Rotate(index, leftNode, leftNode.Count - 1, node, 0, false);
+					return true;
+				}
+			}
+			if (index < Count) {
+				rightNode = GetChildNode(index + 1);
+				if (rightNode.CanRotateOut) {
+					Rotate(index, rightNode, 0, node, node.Count, true);
+					return true;
+				}
+			}
+			if (leftNode != null) {
+				RemoveInternal(index, out var carry, out var carryChild, false);
+				var startIndex = leftNode.Count;
+				leftNode.InsertInternal(startIndex, carry, carryChild!.GetChildNodeRaw(0), false);
+				while (carryChild!.Count > 0) {
+					carryChild.RemoveInternal(0, out var carry1, out var carryChild1, false);
+					leftNode.InsertInternal(leftNode.Count, carry1, carryChild1, false);
+				}
+				carryChild.Release();
+				leftNode.WriteCellIndices(startIndex, false);
+				WriteCellIndices(index);
+			}
+			else if (rightNode != null) {
+				RemoveInternal(index, out var carry, out var carryChild, true);
+				rightNode.InsertInternal(0, carry, carryChild!.GetChildNodeRaw(carryChild.Count), true);
+				while (carryChild!.Count > 0) {
+					carryChild.RemoveInternal(carryChild.Count - 1, out var carry1, out var carryChild1, true);
+					rightNode.InsertInternal(0, carry1, carryChild1, true);
+				}
+				carryChild.Release();
+				rightNode.WriteCellIndices(0, true);
+				WriteCellIndices(index, true);
+			}
+			else throw new InvalidOperationException("Unreachable");
+			return IsHalfFull;
+		}
+		void Rotate(int index, BTreeNode src, int srcIndex, BTreeNode dest, int destIndex, bool leftSided) {
+			src.RemoveInternal(srcIndex, out var carry, out var carryChild, leftSided);
+			src.WriteCellIndices(srcIndex, leftSided);
+			dest.InsertInternal(destIndex, GetMetonPair(index), carryChild, !leftSided);
+			dest.WriteCellIndices(destIndex, !leftSided);
+			ReplaceInternal(index, carry);
 		}
 		#endregion
 		#endregion

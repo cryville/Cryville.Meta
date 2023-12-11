@@ -66,7 +66,25 @@ namespace Cryville.Meta {
 		}
 		public bool Remove(MetonPairModel value) {
 			if (!Search(value)) return false;
-			// TODO
+			var frame = _stack.Pop();
+			if (frame.Node.IsLeaf) {
+				frame.Node.Remove(frame.Index);
+			}
+			else {
+				PushReversePostorder(frame);
+				var descFrame = _stack.Pop();
+				descFrame.Node.SwapRemove(frame.Node, frame.Index);
+			}
+			if (!frame.Node.IsHalfFull) {
+				while (_stack.Count > 0) {
+					frame = _stack.Pop();
+					if (frame.Node.RotateOrMerge(frame.Index))
+						return true;
+				}
+			}
+			if (frame.Node.Count == 0) {
+				_set.ReleaseRootNode();
+			}
 			return true;
 		}
 
@@ -109,6 +127,14 @@ namespace Cryville.Meta {
 				_stack.Push(frame);
 				if (frame.Node.IsLeaf) return;
 				frame = new(frame.Node.GetChildNode(frame.Index), 0);
+			}
+		}
+		void PushReversePostorder(Frame frame) {
+			while (true) {
+				_stack.Push(frame);
+				if (frame.Node.IsLeaf) return;
+				var child = frame.Node.GetChildNode(frame.Index);
+				frame = new(child, child.Count);
 			}
 		}
 	}

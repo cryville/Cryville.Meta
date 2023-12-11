@@ -68,6 +68,16 @@ namespace Cryville.Meta {
 			_db.Seek((long)_ptr);
 			_db.Writer.Write(_nodePointer = RootNode.NodePointer);
 		}
+		internal void ReleaseRootNode() {
+			CheckDisposed();
+			LazyInit();
+
+			Debug.Assert(RootNode != null);
+			Debug.Assert(RootNode.Count == 0);
+			RootNode = RootNode.Release();
+			_db.Seek((long)_ptr);
+			_db.Writer.Write(_nodePointer = RootNode?.NodePointer ?? 0);
+		}
 
 		[SuppressMessage("Reliability", "CA2000")]
 		internal void SplitInsert(MetonPairModel carry, BTreeNode? carryChild, int carryIndex) {
