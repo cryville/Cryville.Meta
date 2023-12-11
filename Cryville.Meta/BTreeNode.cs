@@ -404,7 +404,7 @@ namespace Cryville.Meta {
 			if (index > 0) {
 				leftNode = GetChildNode(index - 1);
 				if (leftNode.CanRotateOut) {
-					Rotate(index, leftNode, leftNode.Count - 1, node, 0, false);
+					Rotate(index - 1, leftNode, leftNode.Count - 1, node, 0, false);
 					return true;
 				}
 			}
