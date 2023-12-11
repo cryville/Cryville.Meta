@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 
 namespace Cryville.Meta.Model {
@@ -7,6 +8,8 @@ namespace Cryville.Meta.Model {
 		public MetonIdentifier Key;
 		public ulong ValuePointer;
 		public MetonIdentifier Value;
+
+		public override readonly string ToString() => string.Format(CultureInfo.CurrentCulture, "{{{0}}}@{1:x}: {{{2}}}@{3:x}", Key, KeyPointer, Value, ValuePointer);
 
 		public readonly int CompareTo(MetonPairModel other) {
 			int r = Key.CompareTo(other.Key);

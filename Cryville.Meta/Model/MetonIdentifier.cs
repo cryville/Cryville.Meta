@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 
 namespace Cryville.Meta.Model {
@@ -68,6 +69,9 @@ namespace Cryville.Meta.Model {
 			ret ^= h4 << 24 | h4 >> 8;
 			return ret;
 		}
+
+		/// <inheritdoc />
+		public override readonly string ToString() => string.Format(CultureInfo.CurrentCulture, "{0:x16}#{1:x16}-{2:x16}-{3:x16}-{4:x16}", TypeKey, SubKey1, SubKey2, SubKey3, SubKey4);
 
 		/// <inheritdoc />
 		public static bool operator ==(MetonIdentifier left, MetonIdentifier right) => left.Equals(right);

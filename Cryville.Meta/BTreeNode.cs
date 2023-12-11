@@ -2,9 +2,11 @@ using Cryville.Meta.Model;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Cryville.Meta {
+	[DebuggerTypeProxy(typeof(BTreeNodeDebugView))]
 	internal class BTreeNode : IDisposable {
 		#region Data structure
 		readonly CmdbConnection _db;
@@ -443,5 +445,10 @@ namespace Cryville.Meta {
 		}
 		#endregion
 		#endregion
+	}
+
+	sealed class BTreeNodeDebugView(BTreeNode self) {
+		[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+		public MetonPairModel[] MetonPairs => Enumerable.Range(0, self.Count).Select(self.GetMetonPair).ToArray();
 	}
 }
