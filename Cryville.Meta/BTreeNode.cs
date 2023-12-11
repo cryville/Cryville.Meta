@@ -145,6 +145,10 @@ namespace Cryville.Meta {
 			var data = LazyData;
 			Debug.Assert(index >= 0 || index < Count);
 			var cellIndex = data._cellIndices[index];
+			return GetMetonPairInCell(cellIndex);
+		}
+		MetonPairModel GetMetonPairInCell(int cellIndex) {
+			var data = LazyData;
 			var pair = data._metonPairs[cellIndex];
 			if (pair.KeyPointer == 0) {
 				SeekToCell(cellIndex);
@@ -255,7 +259,7 @@ namespace Cryville.Meta {
 
 			--data.m_count;
 			var cellIndex = data._cellIndices[index];
-			value = data._metonPairs[cellIndex];
+			value = GetMetonPairInCell(cellIndex);
 			data._freeCells.Enqueue(cellIndex);
 			data._cellIndices.RemoveAt(index);
 
