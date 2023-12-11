@@ -53,8 +53,13 @@ namespace Cryville.Meta {
 				_rfbcs.RemoveAt(index);
 			}
 			else {
-				if (index < 0) index = ~index;
-				_rfbcs.Insert(index, block);
+				if (index < 0) {
+					index = ~index;
+					_rfbcs.Insert(index, block);
+				}
+				else {
+					_rfbcs[index] = block;
+				}
 			}
 			_stream.Position = PageSize + block.Size - 0x08;
 			Writer.Write(block.Pointer);
