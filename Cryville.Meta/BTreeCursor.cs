@@ -74,6 +74,7 @@ namespace Cryville.Meta {
 				PushReversePostorder(frame);
 				var descFrame = _stack.Pop();
 				descFrame.Node.SwapRemove(frame.Node, frame.Index);
+				frame = descFrame;
 			}
 			if (!frame.Node.IsHalfFull) {
 				while (_stack.Count > 0) {
