@@ -228,5 +228,37 @@ namespace Cryville.Meta.Test {
 				}
 			);
 		}
+
+		[Test]
+		[SuppressMessage("Assertion", "NUnit2045")]
+		public void CursorRemove() {
+			TestVerify(
+				() => {
+					var pair = _samplePair;
+					using (var block = _db.AcquireFreeBlock(_db.PageSize)) {
+						_db.Writer.Write((ulong)0);
+						_db.SeekCurrent(_db.PageSize - 8);
+					}
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					var cursor = new BTreeCursor(set);
+					for (var i = 0; i < (_db.BTreeOrder + 2) * _db.BTreeOrder + 1; i++) {
+						pair.Key.TypeKey++;
+						Assert.That(cursor.Add(pair));
+					}
+					pair = _samplePair;
+					for (var i = 0; i < (_db.BTreeOrder + 2) * _db.BTreeOrder + 1; i++) {
+						pair.Key.TypeKey++;
+						Assert.That(cursor.Remove(pair));
+						Assert.That(!cursor.Remove(pair));
+					}
+				},
+				() => {
+					var set = new MetonPairSet(_db, 2 * (ulong)_db.PageSize);
+					_ = set.Count; // Initialize the set
+					using var cursor = new BTreeCursor(set);
+					Assert.That(!cursor.MoveNext());
+				}
+			);
+		}
 	}
 }
