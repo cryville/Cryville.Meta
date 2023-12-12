@@ -1,6 +1,7 @@
 using Cryville.Meta.Model;
 using Cryville.Meta.Util;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -12,7 +13,7 @@ namespace Cryville.Meta {
 		readonly DirectoryInfo _dir;
 		readonly Stream _stream;
 		internal CmdbReader Reader { get; private set; }
-		internal CmdbWriter Writer { get; private set; }
+		internal CmdbWriter? Writer { get; private set; }
 		/// <summary>
 		/// Whether the connection is read-only.
 		/// </summary>
@@ -38,7 +39,7 @@ namespace Cryville.Meta {
 				FileOptions.RandomAccess
 			);
 			Reader = new CmdbReader(_stream);
-			Writer = new CmdbWriter(_stream);
+			if (!readOnly) Writer = new CmdbWriter(_stream);
 			_dir = new FileInfo(path).Directory;
 			if (_stream.Length == 0) InitDatabase();
 			else ReadDatabaseHeader();
@@ -75,6 +76,7 @@ namespace Cryville.Meta {
 		const ulong CmdbMagicNumber = 0x46444d43;
 		internal int PageSize { get; private set; }
 		void InitDatabase() {
+			Debug.Assert(!IsReadOnly);
 			try {
 				PageSize = FileSystemUtil.GetDiskBlockSize(_dir.FullName);
 			}
@@ -97,14 +99,14 @@ namespace Cryville.Meta {
 				SummaryLength = 0,
 			};
 			_stream.SetLength(2 * PageSize);
-			Writer.Write(_sHeader);
+			Writer!.Write(_sHeader);
 			SeekCurrent(CmdbStaticHeader.Reserved);
-			Writer.Write(_dHeader);
+			Writer!.Write(_dHeader);
 			SeekCurrent(CmdbDynamicHeader.Reserved);
-			Writer.Write(_copula);
+			Writer!.Write(_copula);
 			Seek(PageSize);
 			for (int i = 0; i < PageSize / 8; i++) {
-				Writer.Write((ulong)0);
+				Writer!.Write((ulong)0);
 			}
 		}
 		void ReadDatabaseHeader() {

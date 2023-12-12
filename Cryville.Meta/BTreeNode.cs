@@ -199,18 +199,20 @@ namespace Cryville.Meta {
 		/// <param name="index">The start index where the cell indices are to be written.</param>
 		/// <param name="leftSided">Whether to write the left child of the pair at the start index.</param>
 		internal void WriteCellIndices(int index, bool leftSided = false) {
+			Debug.Assert(!_db.IsReadOnly);
+
 			var data = LazyData;
 			Debug.Assert(index <= data.m_count);
 			if (leftSided) {
 				SeekToChildPointer(index);
-				_db.Writer.Write(data._childPtrs[index]);
+				_db.Writer!.Write(data._childPtrs[index]);
 			}
 			else SeekToCellIndex(index);
 			for (var i = index; i < data.m_count;) {
-				_db.Writer.Write(data._cellIndices[i]);
-				_db.Writer.Write(data._childPtrs[++i]);
+				_db.Writer!.Write(data._cellIndices[i]);
+				_db.Writer!.Write(data._childPtrs[++i]);
 			}
-			if (data.m_count < _db.BTreeOrder) _db.Writer.Write((short)-1);
+			if (data.m_count < _db.BTreeOrder) _db.Writer!.Write((short)-1);
 			Version++;
 		}
 		/// <summary>
@@ -227,6 +229,7 @@ namespace Cryville.Meta {
 			Debug.Assert(value.KeyPointer != 0);
 			Debug.Assert(value.Value.PairType == MetonPairType.None);
 			Debug.Assert(value.ValuePointer != 0);
+			Debug.Assert(!_db.IsReadOnly);
 
 			var cellIndex = data._freeCells.Dequeue();
 			data._cellIndices.Insert(index, cellIndex);
@@ -245,7 +248,7 @@ namespace Cryville.Meta {
 			data.m_count++;
 
 			SeekToCell(cellIndex);
-			_db.Writer.Write(value);
+			_db.Writer!.Write(value);
 		}
 		/// <summary>
 		/// Removes a meton pair at the specified index from this node.
@@ -275,17 +278,19 @@ namespace Cryville.Meta {
 			Debug.Assert(value.KeyPointer != 0);
 			Debug.Assert(value.Value.PairType == MetonPairType.None);
 			Debug.Assert(value.ValuePointer != 0);
+			Debug.Assert(!_db.IsReadOnly);
 
 			short cellIndex = data._cellIndices[index];
 			data._metonPairs[cellIndex] = value;
 
 			SeekToCell(cellIndex);
-			_db.Writer.Write(value);
+			_db.Writer!.Write(value);
 		}
 		#endregion
 
 		#region Insert
 		internal static BTreeNode Create(CmdbConnection db, BTreeNode? firstChild) {
+			Debug.Assert(!db.IsReadOnly);
 			var firstChildPtr = firstChild?.NodePointer ?? 0UL;
 			using var block = db.AcquireFreeBlock(db.BTreeSize);
 			LazyData_1 data;
@@ -303,9 +308,9 @@ namespace Cryville.Meta {
 			for (short i = 0; i < db.BTreeOrder; i++) {
 				data._freeCells.Enqueue(i);
 			}
-			db.Writer.Write(0UL);
-			db.Writer.Write(firstChildPtr);
-			db.Writer.Write((short)-1);
+			db.Writer!.Write(0UL);
+			db.Writer!.Write(firstChildPtr);
+			db.Writer!.Write((short)-1);
 			db.SeekCurrent(db.BTreeSize - 0x12);
 			return ret;
 		}

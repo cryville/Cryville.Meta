@@ -62,21 +62,23 @@ namespace Cryville.Meta {
 			CheckDisposed();
 			LazyInit();
 
+			Debug.Assert(!_db.IsReadOnly);
 			Debug.Assert(RootNode == null);
 			RootNode = BTreeNode.Create(_db, null);
 			RootNode.Insert(0, value);
 			_db.Seek((long)_ptr);
-			_db.Writer.Write(_nodePointer = RootNode.NodePointer);
+			_db.Writer!.Write(_nodePointer = RootNode.NodePointer);
 		}
 		internal void ReleaseRootNode() {
 			CheckDisposed();
 			LazyInit();
 
+			Debug.Assert(!_db.IsReadOnly);
 			Debug.Assert(RootNode != null);
-			Debug.Assert(RootNode.Count == 0);
+			Debug.Assert(RootNode!.Count == 0);
 			RootNode = RootNode.Release();
 			_db.Seek((long)_ptr);
-			_db.Writer.Write(_nodePointer = RootNode?.NodePointer ?? 0);
+			_db.Writer!.Write(_nodePointer = RootNode?.NodePointer ?? 0);
 		}
 
 		[SuppressMessage("Reliability", "CA2000")]
@@ -84,14 +86,15 @@ namespace Cryville.Meta {
 			CheckDisposed();
 			LazyInit();
 
+			Debug.Assert(!_db.IsReadOnly);
 			Debug.Assert(RootNode != null);
-			BTreeNode.SplitInsert(_db, RootNode, ref carry, ref carryChild, carryIndex);
+			BTreeNode.SplitInsert(_db, RootNode!, ref carry, ref carryChild, carryIndex);
 
 			RootNode = BTreeNode.Create(_db, RootNode);
 			RootNode.InsertInternal(0, carry, carryChild);
 			RootNode.WriteCellIndices(0);
 			_db.Seek((long)_ptr);
-			_db.Writer.Write(_nodePointer = RootNode.NodePointer);
+			_db.Writer!.Write(_nodePointer = RootNode.NodePointer);
 		}
 
 		public void Add(MetonPair item) {

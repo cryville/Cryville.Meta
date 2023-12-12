@@ -62,7 +62,7 @@ namespace Cryville.Meta {
 				}
 			}
 			_stream.Position = PageSize + block.Size - 0x08;
-			Writer.Write(block.Pointer);
+			Writer!.Write(block.Pointer);
 		}
 		internal readonly struct BlockScope : IDisposable {
 			readonly CmdbConnection _self;
@@ -72,6 +72,7 @@ namespace Cryville.Meta {
 			readonly ulong _ptrNextLargeBlock;
 			public ulong Pointer => (ulong)_lfb.Pointer;
 			internal BlockScope(CmdbConnection self, int size) {
+				Debug.Assert(!self.IsReadOnly);
 				Debug.Assert(size > 0 && size <= self.PageSize);
 				_self = self;
 				_size = size;
@@ -93,7 +94,7 @@ namespace Cryville.Meta {
 					// Seek to the aligned position
 					_self.SeekCurrent(alignedSize - _size);
 					var newSmallBlock = new RootFreeBlockCell(_lfb.Size - alignedSize, _lfb.Pointer + alignedSize);
-					_self.Writer.Write((ulong)_sfb.Pointer);
+					_self.Writer!.Write((ulong)_sfb.Pointer);
 					_self.PushFreeBlock(newSmallBlock);
 				}
 				_self.PushFreeBlock(new(_lfb.Size, (long)_ptrNextLargeBlock));
@@ -101,13 +102,14 @@ namespace Cryville.Meta {
 		}
 		internal BlockScope AcquireFreeBlock(int size) => new(this, size);
 		internal void ReleaseBlock(ulong ptr, int size) {
+			Debug.Assert(!IsReadOnly);
 			Debug.Assert(ptr > 0 && size > 0);
 			int alignedSize = GetAlignedSize(size);
 			var fb = new RootFreeBlockCell(alignedSize, (long)ptr);
 			var index = _rfbcs.BinarySearch(fb);
 			var nextFreeBlockPtr = index < 0 ? 0 : _rfbcs[index].Pointer;
 			Seek((long)ptr);
-			Writer.Write((ulong)nextFreeBlockPtr);
+			Writer!.Write((ulong)nextFreeBlockPtr);
 			PushFreeBlock(fb);
 		}
 	}
