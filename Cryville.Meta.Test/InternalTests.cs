@@ -16,7 +16,7 @@ namespace Cryville.Meta.Test {
 		static readonly MetonPairModel _samplePair = new() {
 			KeyPointer = 233,
 			ValuePointer = 2333,
-			Key = new MetonIdentifier { TypeKey = 0xd000_0000_0000_0000, SubKey1 = 0x0123_4567_89ab_cdef },
+			Key = new MetonIdentifier { TypeKey = 0xc000_0000_0000_0000, SubKey1 = 0x0123_4567_89ab_cdef },
 			Value = new MetonIdentifier { TypeKey = 0x0000_0000_0000_0000, SubKey1 = 0xfedc_ba98_7654_3210 },
 		};
 
@@ -111,9 +111,9 @@ namespace Cryville.Meta.Test {
 					var pair = _samplePair;
 					var node = BTreeNode.Create(_db, null);
 					node.Insert(0, pair);
-					pair.Key.TypeKey = 0xd000_0000_0000_0001;
+					pair.Key.TypeKey = 0xc000_0000_0000_0001;
 					node.Insert(1, pair);
-					pair.Key.TypeKey = 0xd000_0000_0000_0003;
+					pair.Key.TypeKey = 0xc000_0000_0000_0003;
 					node.Insert(2, pair);
 				},
 				() => {
@@ -123,31 +123,31 @@ namespace Cryville.Meta.Test {
 					};
 					using (var cursor = new BTreeCursor(set)) {
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0000));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0000));
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0001));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0001));
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0003));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0003));
 						Assert.That(!cursor.MoveNext());
 					}
 					using (var cursor = new BTreeCursor(set)) {
-						pair.Key.TypeKey = 0xd000_0000_0000_0001;
+						pair.Key.TypeKey = 0xc000_0000_0000_0001;
 						Assert.That(cursor.Search(pair));
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0001));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0001));
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0003));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0003));
 						Assert.That(!cursor.MoveNext());
 					}
 					using (var cursor = new BTreeCursor(set)) {
-						pair.Key.TypeKey = 0xd000_0000_0000_0002;
+						pair.Key.TypeKey = 0xc000_0000_0000_0002;
 						Assert.That(!cursor.Search(pair));
 						Assert.That(cursor.MoveNext());
-						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xd000_0000_0000_0003));
+						Assert.That(cursor.Current.Key.TypeKey, Is.EqualTo(0xc000_0000_0000_0003));
 						Assert.That(!cursor.MoveNext());
 					}
 					using (var cursor = new BTreeCursor(set)) {
-						pair.Key.TypeKey = 0xd000_0000_0000_0004;
+						pair.Key.TypeKey = 0xc000_0000_0000_0004;
 						Assert.That(!cursor.Search(pair));
 						Assert.That(!cursor.MoveNext());
 					}
@@ -200,7 +200,7 @@ namespace Cryville.Meta.Test {
 						i => new MetonPairModel {
 							KeyPointer = 233,
 							ValuePointer = 2333,
-							Key = new MetonIdentifier { TypeKey = 0xd000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
+							Key = new MetonIdentifier { TypeKey = 0xc000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
 							Value = new MetonIdentifier { TypeKey = 0x0000_0000_0000_0000, SubKey1 = 0xfedc_ba98_7654_3210 },
 						}
 					).Distinct().ToArray();
@@ -271,7 +271,7 @@ namespace Cryville.Meta.Test {
 						i => new MetonPairModel {
 							KeyPointer = 233,
 							ValuePointer = 2333,
-							Key = new MetonIdentifier { TypeKey = 0xd000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
+							Key = new MetonIdentifier { TypeKey = 0xc000_0000_0000_0000, SubKey1 = (ulong)random.Next() },
 							Value = new MetonIdentifier { TypeKey = 0x0000_0000_0000_0000, SubKey1 = 0xfedc_ba98_7654_3210 },
 						}
 					).Distinct().ToArray();
