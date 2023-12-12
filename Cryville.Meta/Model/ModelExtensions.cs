@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using UnsafeIL;
 
 namespace Cryville.Meta.Model {
@@ -8,8 +8,8 @@ namespace Cryville.Meta.Model {
 			value.ReadFrom(reader);
 			return value;
 		}
-		public static void Write(this BinaryWriter reader, IModel value) {
-			value.WriteTo(reader);
+		public static void Write(this BinaryWriter writer, IModel value) {
+			value.WriteTo(writer);
 		}
 	}
 }
