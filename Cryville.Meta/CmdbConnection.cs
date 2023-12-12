@@ -32,7 +32,7 @@ namespace Cryville.Meta {
 		public CmdbConnection(string path, bool readOnly) {
 			_stream = new FileStream(
 				path,
-				FileMode.OpenOrCreate,
+				readOnly ? FileMode.Open : FileMode.OpenOrCreate,
 				readOnly ? FileAccess.Read : FileAccess.ReadWrite,
 				readOnly ? FileShare.ReadWrite : FileShare.Read,
 				FileSystemUtil.GetDiskBlockSize(path),
